@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Workshop App</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SHARED VARIABLES
+   ============================================================ */
+:root {
+  --bg: #06060d;
+  --surface: #0f0f18;
+  --surface2: #16161f;
+  --border: #1e1e2e;
+  --accent: #ff6b35;
+  --accent2: #7c3aed;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --text: #f0f0f5;
+  --muted: #5a5a7a;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-display); overflow: hidden; }
+
+/* Grid bg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(124,58,237,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Orbs */
+.bg-orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; transition: all 2s ease; }
+.bg-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(255,107,53,0.25), transparent); top: -200px; right: -150px; }
+.bg-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(124,58,237,0.25), transparent); bottom: -150px; left: -150px; }
+
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+@keyframes bounceIn { 0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1} }
+@keyframes borderPulse { 0%,100%{border-color:rgba(239,68,68,0.4)}50%{border-color:rgba(239,68,68,0.8)} }
+@keyframes toastIn { from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1} }
+@keyframes vizPulse { 0%,100%{height:8px}50%{height:26px} }
+
+/* ============================================================
+   MODE SELECTOR (landing)
+   ============================================================ */
+#modeSelector {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+
+.mode-inner { text-align: center; max-width: 480px; padding: 40px; }
+.mode-logo { font-size: 52px; margin-bottom: 20px; }
+.mode-title { font-size: 32px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 8px; }
+.mode-sub { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-bottom: 40px; }
+.mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mode-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 28px 20px; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.mode-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.mode-card:hover.participant { border-color: var(--accent2); }
+.mode-card-icon { font-size: 36px; }
+.mode-card-title { font-size: 16px; font-weight: 700; }
+.mode-card-desc { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: center; line-height: 1.5; }
+
+/* ============================================================
+   APP LAYERS
+   ============================================================ */
+#facilitatorApp, #participantApp {
+  position: fixed; inset: 0; z-index: 1;
+  display: none; overflow-y: auto; overflow-x: hidden;
+}
+
+.app-inner { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px; min-height: 100vh; }
+
+/* ============================================================
+   FACILITATOR STYLES
+   ============================================================ */
+.fac-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.fac-header-left { display: flex; align-items: center; gap: 14px; }
+.fac-logo { width: 38px; height: 38px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.fac-logo h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+.badge { font-family: var(--font-mono); font-size: 10px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; }
+.status-row { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+.status-dot.recording { background: var(--red); box-shadow: 0 0 8px var(--red); animation: pulse 1s infinite; }
+.status-text { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+/* Setup */
+.setup-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+.panel-heading { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 20px; font-weight: 600; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.field label { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 7px; }
+.field input, .field select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--font-display); font-size: 14px; outline: none; transition: border-color 0.2s; }
+.field input:focus, .field select:focus { border-color: var(--accent2); }
+select option { background: var(--surface2); }
+
+.q-row { display: grid; grid-template-columns: 36px 1fr 95px; gap: 10px; align-items: center; margin-bottom: 10px; }
+.q-num { width: 36px; height: 36px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
+.q-row input[type=text] { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--font-display); font-size: 14px; outline: none; transition: border-color 0.2s; }
+.q-row input[type=text]:focus { border-color: var(--accent2); }
+.dur-input { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.dur-input input { background: transparent; border: none; color: var(--text); font-family: var(--font-mono); font-size: 14px; width: 30px; outline: none; text-align: center; }
+.dur-input span { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+/* Session code panel */
+.code-panel {
+  background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(124,58,237,0.08));
+  border: 1px solid rgba(255,107,53,0.25); border-radius: 14px;
+  padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+  display: none;
+}
+.code-big { font-family: var(--font-mono); font-size: 30px; font-weight: 500; color: var(--accent); letter-spacing: 6px; }
+.code-url { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 4px; }
+.code-url a { color: var(--accent2); text-decoration: none; }
+
+/* Main grid */
+.main-grid { display: none; grid-template-columns: 1fr 320px; gap: 20px; }
+
+/* Stage */
+.stage-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.stage-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.stage-preview {
+  aspect-ratio: 16/9; background: #040408; position: relative;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.preview-rec { position: absolute; top: 14px; right: 14px; font-family: var(--font-mono); font-size: 11px; color: var(--red); display: flex; align-items: center; gap: 5px; opacity: 0; transition: opacity 0.3s; }
+.preview-rec::before { content: '●'; animation: pulse 1s infinite; }
+.preview-rec.on { opacity: 1; }
+.preview-body { text-align: center; padding: 32px; width: 100%; }
+.preview-phase { font-family: var(--font-mono); font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px; }
+.preview-q { font-size: clamp(14px, 2vw, 22px); font-weight: 700; line-height: 1.4; max-width: 600px; margin: 0 auto 24px; }
+.preview-clock { font-family: var(--font-mono); font-size: clamp(36px, 5vw, 60px); font-weight: 300; color: var(--accent); letter-spacing: 3px; }
+.preview-clock.warn { color: var(--yellow); }
+.preview-clock.urg { color: var(--red); animation: pulse 0.5s infinite; }
+
+.ctrl-bar { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+
+/* Sidebar */
+.sidebar { display: flex; flex-direction: column; gap: 16px; }
+.sidebar-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+
+/* Question steps */
+.q-step { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px; transition: all 0.3s; }
+.q-step:last-child { margin-bottom: 0; }
+.q-step.active { border-color: var(--accent); background: rgba(255,107,53,0.07); }
+.q-step.done { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.05); }
+.q-step-icon { width: 28px; height: 28px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); flex-shrink: 0; transition: all 0.3s; }
+.q-step.active .q-step-icon { background: var(--accent); border-color: var(--accent); color: white; }
+.q-step.done .q-step-icon { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); color: var(--green); }
+.q-step-info { flex: 1; min-width: 0; }
+.q-step-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.q-step-text { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-step-status { font-family: var(--font-mono); font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--surface2); color: var(--muted); white-space: nowrap; }
+.q-step.active .q-step-status { background: rgba(255,107,53,0.15); color: var(--accent); }
+.q-step.done .q-step-status { background: rgba(34,197,94,0.15); color: var(--green); }
+
+/* Tables grid */
+.tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.table-cell { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; transition: all 0.3s; }
+.table-cell.connected { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.06); }
+.table-cell.recording { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); animation: borderPulse 1s infinite; }
+.table-cell-num { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--muted); }
+.table-cell.connected .table-cell-num, .table-cell.recording .table-cell-num { color: var(--text); }
+.table-cell-state { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.table-cell.connected .table-cell-state { color: var(--green); }
+.table-cell.recording .table-cell-state { color: var(--red); }
+
+/* Recordings */
+.rec-list { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.rec-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; }
+.rec-item:hover { border-color: var(--accent2); }
+.rec-name { font-family: var(--font-mono); font-size: 11px; color: var(--text); font-weight: 500; }
+.rec-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.rec-dl { background: transparent; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; color: var(--accent2); font-family: var(--font-mono); font-size: 10px; cursor: pointer; transition: all 0.2s; }
+.rec-dl:hover { border-color: var(--accent2); background: rgba(124,58,237,0.1); }
+
+/* Claude prompt box */
+.prompt-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); min-height: 80px; max-height: 140px; overflow-y: auto; line-height: 1.6; white-space: pre-wrap; }
+
+/* Shared buttons */
+.btn { border: none; border-radius: 9px; padding: 11px 20px; font-family: var(--font-display); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 0.2px; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #e55a25; transform: translateY(-1px); }
+.btn-primary:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; transform: none; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn-danger { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+.btn-sm { padding: 7px 14px; font-size: 11px; }
+
+/* Complete banner */
+.complete-banner { background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(124,58,237,0.08)); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 16px 20px; text-align: center; margin-top: 16px; display: none; }
+.complete-banner.on { display: block; }
+.complete-banner h3 { color: var(--green); font-size: 16px; margin-bottom: 4px; }
+
+/* Toasts */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; display: flex; align-items: center; gap: 8px; animation: toastIn 0.3s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.4); max-width: 300px; }
+.toast.ok { border-color: rgba(34,197,94,0.4); }
+.toast.err { border-color: rgba(239,68,68,0.4); }
+.toast.info { border-color: rgba(124,58,237,0.4); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================================
+   PARTICIPANT STYLES
+   ============================================================ */
+.p-screen { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; padding: 28px 36px; transition: opacity 0.4s ease; }
+.p-screen.off { opacity: 0; pointer-events: none; }
+
+/* Join */
+#pJoin { align-items: center; justify-content: center; text-align: center; gap: 0; }
+.p-join-logo { font-size: 52px; margin-bottom: 20px; }
+.p-join-title { font-size: 34px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 6px; }
+.p-join-sub { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-bottom: 40px; }
+.p-code-row { display: flex; gap: 10px; align-items: center; justify-content: center; max-width: 360px; margin-bottom: 14px; }
+.p-code-input { flex: 1; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 18px; font-family: var(--font-mono); font-size: 22px; color: var(--text); letter-spacing: 6px; text-transform: uppercase; text-align: center; outline: none; transition: border-color 0.2s; }
+.p-code-input:focus { border-color: var(--accent); }
+.p-join-btn { background: var(--accent); border: none; border-radius: 12px; padding: 16px 24px; color: white; font-family: var(--font-display); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.p-join-btn:hover { background: #e55a25; transform: scale(1.02); }
+.p-table-row { display: flex; align-items: center; gap: 10px; max-width: 360px; }
+.p-table-label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.p-table-select { flex: 1; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 14px; font-family: var(--font-mono); font-size: 14px; color: var(--text); outline: none; cursor: pointer; }
+.p-join-err { font-family: var(--font-mono); font-size: 12px; color: var(--red); margin-top: 10px; min-height: 18px; }
+
+/* Waiting */
+#pWaiting { align-items: center; justify-content: center; text-align: center; }
+.p-wait-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 8px 16px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+.p-wait-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+.p-wait-title { font-size: clamp(36px, 8vw, 64px); font-weight: 800; letter-spacing: -2px; margin-bottom: 10px; line-height: 1; }
+.p-wait-sub { font-size: 16px; color: var(--muted); margin-bottom: 40px; }
+.p-table-chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); border-radius: 100px; padding: 10px 20px; font-family: var(--font-mono); font-size: 14px; color: var(--accent); }
+
+/* Question */
+#pQuestion { justify-content: space-between; }
+.p-q-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.p-pips { display: flex; gap: 6px; align-items: center; }
+.p-pip { height: 4px; border-radius: 2px; background: var(--border); transition: all 0.4s ease; width: 16px; }
+.p-pip.active { background: var(--accent); width: 32px; }
+.p-pip.done { background: rgba(34,197,94,0.5); }
+.p-q-label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.p-rec-badge { display: flex; align-items: center; gap: 5px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 100px; padding: 5px 12px; font-family: var(--font-mono); font-size: 10px; color: var(--red); opacity: 0; transition: opacity 0.3s; }
+.p-rec-badge.on { opacity: 1; }
+.p-rec-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: pulse 1s infinite; }
+
+.p-q-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px 0; gap: 20px; }
+.p-q-context { font-family: var(--font-mono); font-size: 11px; color: var(--accent2); text-transform: uppercase; letter-spacing: 3px; }
+.p-q-text { font-size: clamp(20px, 3.5vw, 40px); font-weight: 700; line-height: 1.3; letter-spacing: -0.8px; max-width: 680px; }
+
+.p-q-footer { display: flex; align-items: flex-end; justify-content: space-between; flex-shrink: 0; }
+.p-timer-block { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.p-timer-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.p-timer-svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+.p-timer-svg circle { fill: none; stroke: var(--border); stroke-width: 3; }
+.p-timer-svg circle.prog { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 0; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 1s linear, stroke 0.4s; }
+.p-timer-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; }
+.p-timer-num { font-family: var(--font-mono); font-size: clamp(28px, 5vw, 48px); font-weight: 300; color: var(--accent); letter-spacing: 2px; line-height: 1; font-variant-numeric: tabular-nums; transition: color 0.4s; }
+.p-timer-num.warn { color: var(--yellow); }
+.p-timer-num.urg { color: var(--red); }
+.p-timer-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+.p-table-info { text-align: right; }
+.p-table-info-num { font-family: var(--font-mono); font-size: 52px; font-weight: 300; color: var(--border); line-height: 1; }
+.p-table-info-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+
+.p-audio-viz { display: flex; align-items: center; gap: 4px; height: 28px; display: none; }
+.p-viz-bar { width: 4px; border-radius: 2px; background: var(--red); opacity: 0.6; animation: vizPulse 1s ease infinite; }
+
+/* Transition */
+#pTransition { align-items: center; justify-content: center; text-align: center; gap: 0; }
+.p-trans-icon { font-size: 60px; margin-bottom: 20px; animation: bounceIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275); }
+.p-trans-title { font-size: clamp(26px, 4.5vw, 48px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 6px; }
+.p-trans-sub { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+.p-themes-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; max-width: 560px; width: 100%; text-align: left; margin-bottom: 28px; display: none; }
+.p-themes-box h4 { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 10px; }
+.p-theme-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.p-chip { background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.3); border-radius: 100px; padding: 7px 14px; font-size: 13px; color: var(--text); animation: fadeInUp 0.4s ease forwards; opacity: 0; }
+.p-next-area { display: none; text-align: center; }
+.p-next-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+.p-next-q { font-size: 18px; font-weight: 700; color: var(--text); opacity: 0.6; max-width: 480px; }
+.p-trans-timer { margin-top: 32px; font-family: var(--font-mono); font-size: 16px; color: var(--yellow); letter-spacing: 2px; }
+
+/* Complete */
+#pComplete { align-items: center; justify-content: center; text-align: center; }
+.p-complete-icon { font-size: 76px; margin-bottom: 20px; }
+.p-complete-title { font-size: clamp(30px, 6vw, 60px); font-weight: 800; letter-spacing: -2px; margin-bottom: 10px; }
+.p-complete-sub { font-size: 16px; color: var(--muted); max-width: 440px; line-height: 1.6; }
+
+/* ============================================================
+   SCROLLBAR in facilitator
+   ============================================================ */
+#facilitatorApp { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+</style>
+</head>
+<body>
+
+<div class="bg-orb bg-orb-1" id="orb1"></div>
+<div class="bg-orb bg-orb-2" id="orb2"></div>
+
+<!-- ==================== MODE SELECTOR ==================== -->
+<div id="modeSelector">
+  <div class="mode-inner">
+    <div class="mode-logo">⚡</div>
+    <h1 class="mode-title">Workshop App</h1>
+    <p class="mode-sub">Open this file on every device — choose your role</p>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="launchFacilitator()">
+        <div class="mode-card-icon">🎯</div>
+        <div class="mode-card-title">Facilitator</div>
+        <div class="mode-card-desc">Control the session from your laptop</div>
+      </div>
+      <div class="mode-card participant" onclick="launchParticipant()">
+        <div class="mode-card-icon">📱</div>
+        <div class="mode-card-title">Table Participant</div>
+        <div class="mode-card-desc">Join from an iPad or phone at your table</div>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-family:var(--font-mono);font-size:10px;color:var(--muted)">All devices must open the same file for local sync to work.<br>Or host on netlify.com/drop for full multi-device use.</p>
+  </div>
+</div>
+
+<!-- ==================== FACILITATOR APP ==================== -->
+<div id="facilitatorApp">
+<div class="app-inner">
+
+  <!-- Header -->
+  <div class="fac-header">
+    <div class="fac-header-left">
+      <div class="fac-logo">⚡</div>
+      <div>
+        <h1 style="font-size:18px;font-weight:700;letter-spacing:-0.5px">Workshop Control</h1>
+      </div>
+      <span class="badge">Facilitator</span>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="fStatusDot"></div>
+      <span class="status-text" id="fStatusText">Session not started</span>
+    </div>
+  </div>
+
+  <!-- Setup -->
+  <div class="setup-panel" id="fSetup">
+    <div class="panel-heading">Session Setup</div>
+    <div class="setup-grid">
+      <div class="field">
+        <label>Workshop Title</label>
+        <input type="text" id="fTitle" value="FaBA Growth Hub Workshop" placeholder="Workshop name...">
+      </div>
+      <div class="field">
+        <label>Number of Tables</label>
+        <select id="fTables">
+          <option value="3">3 Tables</option>
+          <option value="4" selected>4 Tables</option>
+          <option value="5">5 Tables</option>
+          <option value="6">6 Tables</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Transition Time</label>
+        <select id="fTransTime">
+          <option value="60">60 seconds</option>
+          <option value="90" selected>90 seconds</option>
+          <option value="120">2 minutes</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="q-row">
+      <div class="q-num">Q1</div>
+      <input type="text" id="fQ1" value="What is the biggest challenge you face in scaling your food or beverage business right now?">
+      <div class="dur-input"><input type="number" id="fD1" value="8" min="2" max="30"><span>min</span></div>
+    </div>
+    <div class="q-row">
+      <div class="q-num">Q2</div>
+      <input type="text" id="fQ2" value="Building on those challenges — what resources, connections or support would make the biggest difference to your growth?">
+      <div class="dur-input"><input type="number" id="fD2" value="8" min="2" max="30"><span>min</span></div>
+    </div>
+    <div class="q-row" style="margin-bottom:20px">
+      <div class="q-num">Q3</div>
+      <input type="text" id="fQ3" value="Thinking about the themes we've surfaced — what one commitment could this group make together to drive real change?">
+      <div class="dur-input"><input type="number" id="fD3" value="10" min="2" max="30"><span>min</span></div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-primary" onclick="fStartSession()">Launch Session</button>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">Total: <span id="fTotalMin">26</span> min discussion + transitions</span>
+    </div>
+  </div>
+
+  <!-- Code panel -->
+  <div class="code-panel" id="fCodePanel">
+    <div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Session Code</div>
+      <div class="code-big" id="fCodeDisplay">——</div>
+      <div class="code-url">Share this file + code with tables → <a href="#" id="fCodeNote">workshop.html?session=CODE</a></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="fCopyCode()">Copy Code</button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid" id="fMainGrid">
+    <!-- Stage -->
+    <div>
+      <div class="stage-panel">
+        <div class="stage-head">
+          <span style="font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);font-weight:600">Live Preview — What Participants See</span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted)" id="fStageLabel">Idle</span>
+        </div>
+        <div class="stage-preview">
+          <div class="preview-rec" id="fPreviewRec">REC</div>
+          <div class="preview-body" id="fPreviewBody">
+            <div class="preview-phase">Waiting to start</div>
+            <div class="preview-q" style="color:var(--muted)">Your workshop will begin shortly.</div>
+          </div>
+        </div>
+        <div class="ctrl-bar">
+          <button class="btn btn-secondary" id="fPrevBtn" onclick="fPrev()" disabled>← Back</button>
+          <button class="btn btn-primary" id="fNextBtn" onclick="fNext()" style="flex:1">Start Session →</button>
+          <button class="btn btn-danger" id="fEndTransBtn" onclick="fEndTrans()" style="display:none;flex:1">End Transition →</button>
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap" id="fHint">Press Start to begin Q1</span>
+        </div>
+      </div>
+      <div class="complete-banner" id="fComplete">
+        <h3>✓ Session Complete</h3>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px">All questions done. Download audio files and paste transcripts into Claude using the prompt below.</p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-card">
+        <div class="panel-heading" style="margin-bottom:14px">Question Progress</div>
+        <div id="fQSteps"></div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="panel-heading" style="margin-bottom:12px">Tables Connected</div>
+        <div class="tables-grid" id="fTablesGrid"></div>
+        <div style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--muted)">
+          <span id="fConnCount">0</span> / <span id="fTableTotal">4</span> tables
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="panel-heading" style="margin-bottom:12px">Recordings</div>
+        <div class="rec-list" id="fRecList">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:16px">No recordings yet</div>
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <div class="panel-heading" style="margin-bottom:10px">Claude Prompt</div>
+        <div class="prompt-box" id="fClaudePrompt">Launch session to generate extraction prompt.</div>
+        <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px" onclick="fCopyPrompt()">Copy Prompt</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end app-inner -->
+</div><!-- end facilitatorApp -->
+
+<!-- ==================== PARTICIPANT APP ==================== -->
+<div id="participantApp">
+
+  <!-- Join -->
+  <div class="p-screen" id="pJoin">
+    <div class="p-join-logo">⚡</div>
+    <h1 class="p-join-title">Join Workshop</h1>
+    <p class="p-join-sub">Enter the session code from your facilitator</p>
+    <div class="p-code-row">
+      <input type="text" class="p-code-input" id="pCodeInput" maxlength="6" placeholder="CODE" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="p-join-btn" onclick="pJoin()">Join</button>
+    </div>
+    <div class="p-table-row">
+      <span class="p-table-label">Table number:</span>
+      <select class="p-table-select" id="pTableSel">
+        <option value="1">Table 1</option>
+        <option value="2">Table 2</option>
+        <option value="3">Table 3</option>
+        <option value="4">Table 4</option>
+        <option value="5">Table 5</option>
+        <option value="6">Table 6</option>
+      </select>
+    </div>
+    <div class="p-join-err" id="pJoinErr"></div>
+  </div>
+
+  <!-- Waiting -->
+  <div class="p-screen off" id="pWaiting">
+    <div class="p-wait-badge"><div class="p-wait-dot"></div>Connected</div>
+    <h2 class="p-wait-title" id="pWaitTitle">Workshop</h2>
+    <p class="p-wait-sub">Your facilitator will start the session shortly.</p>
+    <div class="p-table-chip">📍 Table <span id="pWaitTable">1</span></div>
+  </div>
+
+  <!-- Question -->
+  <div class="p-screen off" id="pQuestion">
+    <div class="p-q-header">
+      <div class="p-pips" id="pPips"></div>
+      <div class="p-q-label" id="pQLabel">Q1 of 3</div>
+      <div class="p-rec-badge" id="pRecBadge"><div class="p-rec-dot"></div>REC</div>
+    </div>
+    <div class="p-q-body">
+      <div class="p-q-context" id="pQContext">QUESTION 1 OF 3</div>
+      <div class="p-q-text" id="pQText">Loading...</div>
+      <div class="p-audio-viz" id="pAudioViz">
+        <div class="p-viz-bar" style="animation-delay:0s"></div>
+        <div class="p-viz-bar" style="animation-delay:0.1s"></div>
+        <div class="p-viz-bar" style="animation-delay:0.2s"></div>
+        <div class="p-viz-bar" style="animation-delay:0.15s"></div>
+        <div class="p-viz-bar" style="animation-delay:0.05s"></div>
+      </div>
+    </div>
+    <div class="p-q-footer">
+      <div class="p-timer-block">
+        <div class="p-timer-ring-wrap">
+          <svg class="p-timer-svg" width="120" height="120" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45"/>
+            <circle class="prog" id="pTimerRing" cx="50" cy="50" r="45"/>
+          </svg>
+          <div class="p-timer-inner">
+            <div class="p-timer-num" id="pTimerNum">08:00</div>
+            <div class="p-timer-lbl">remaining</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-table-info">
+        <div class="p-table-info-num" id="pQTableNum">1</div>
+        <div class="p-table-info-lbl">Table</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transition -->
+  <div class="p-screen off" id="pTransition">
+    <div class="p-trans-icon">✓</div>
+    <div class="p-trans-title" id="pTransTitle">Question 1 Complete</div>
+    <div class="p-trans-sub" id="pTransSub">Great discussion!</div>
+    <div class="p-themes-box" id="pThemesBox">
+      <h4>Themes surfaced</h4>
+      <div class="p-theme-chips" id="pThemeChips"></div>
+    </div>
+    <div class="p-next-area" id="pNextArea">
+      <div class="p-next-lbl">Coming up</div>
+      <div class="p-next-q" id="pNextQ"></div>
+    </div>
+    <div class="p-trans-timer" id="pTransTimer">90s</div>
+  </div>
+
+  <!-- Complete -->
+  <div class="p-screen off" id="pComplete">
+    <div class="p-complete-icon">🎉</div>
+    <h2 class="p-complete-title">Workshop Complete</h2>
+    <p class="p-complete-sub">Thank you for your contribution. Your insights will help shape the outcomes of this program.</p>
+  </div>
+
+</div><!-- end participantApp -->
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+'use strict';
+
+// ============================================================
+// SHARED STORAGE KEY HELPERS
+// ============================================================
+const SESSION_KEY = code => 'ws_session_' + code.toUpperCase();
+const LATEST_KEY = 'ws_latest_code';
+
+function saveSession(code, data) {
+  localStorage.setItem(SESSION_KEY(code), JSON.stringify(data));
+}
+function loadSession(code) {
+  const s = localStorage.getItem(SESSION_KEY(code));
+  return s ? JSON.parse(s) : null;
+}
+function loadLatestCode() {
+  return localStorage.getItem(LATEST_KEY) || '';
+}
+
+// ============================================================
+// MODE LAUNCHER
+// ============================================================
+function launchFacilitator() {
+  document.getElementById('modeSelector').style.display = 'none';
+  document.getElementById('facilitatorApp').style.display = 'block';
+  fInit();
+}
+
+function launchParticipant() {
+  document.getElementById('modeSelector').style.display = 'none';
+  document.getElementById('participantApp').style.display = 'block';
+  pInit();
+}
+
+// Auto-launch based on URL param
+const _urlP = new URLSearchParams(window.location.search);
+if (_urlP.get('mode') === 'facilitator') launchFacilitator();
+else if (_urlP.get('mode') === 'participant') launchParticipant();
+else if (_urlP.get('session')) {
+  // Direct link to participant with session pre-filled
+  document.getElementById('pCodeInput').value = _urlP.get('session').toUpperCase();
+  if (_urlP.get('table')) document.getElementById('pTableSel').value = _urlP.get('table');
+  launchParticipant();
+}
+
+// ============================================================
+// FACILITATOR
+// ============================================================
+const F = {
+  phase: 'idle',
+  currentQ: 0,
+  secondsLeft: 0,
+  totalSeconds: 0,
+  transLeft: 0,
+  timerInterval: null,
+  transInterval: null,
+  sessionCode: '',
+  questions: [],
+  durations: [],
+  transTime: 90,
+  tableCount: 4,
+  recordings: [],
+  connectedTables: new Set(),
+  recordingTables: new Set(),
+  recBlobs: {},
+};
+
+function fInit() {
+  ['fD1','fD2','fD3'].forEach(id => document.getElementById(id).addEventListener('input', fUpdateTotal));
+  fUpdateTotal();
+}
+
+function fUpdateTotal() {
+  const t = ['fD1','fD2','fD3'].reduce((a,id) => a + (parseInt(document.getElementById(id).value)||0), 0);
+  document.getElementById('fTotalMin').textContent = t;
+}
+
+function fStartSession() {
+  const qs = ['fQ1','fQ2','fQ3'].map(id => document.getElementById(id).value.trim());
+  const ds = ['fD1','fD2','fD3'].map(id => (parseInt(document.getElementById(id).value)||8) * 60);
+  if (qs.some(q => !q)) { fToast('Please fill in all three questions.', 'err'); return; }
+
+  F.questions = qs;
+  F.durations = ds;
+  F.tableCount = parseInt(document.getElementById('fTables').value);
+  F.transTime = parseInt(document.getElementById('fTransTime').value);
+  F.sessionCode = Math.random().toString(36).substr(2,6).toUpperCase();
+
+  const session = {
+    code: F.sessionCode,
+    title: document.getElementById('fTitle').value,
+    questions: qs,
+    durations: ds,
+    tableCount: F.tableCount,
+    transTime: F.transTime,
+    phase: 'waiting',
+    currentQ: 0,
+    secondsLeft: 0,
+    lastUpdate: Date.now()
+  };
+  saveSession(F.sessionCode, session);
+  localStorage.setItem(LATEST_KEY, F.sessionCode);
+
+  document.getElementById('fSetup').style.display = 'none';
+  document.getElementById('fCodePanel').style.display = 'flex';
+  document.getElementById('fMainGrid').style.display = 'grid';
+  document.getElementById('fCodeDisplay').textContent = F.sessionCode;
+  document.getElementById('fCodeNote').textContent = 'Open this same file → choose "Table Participant" → enter code ' + F.sessionCode;
+  document.getElementById('fTableTotal').textContent = F.tableCount;
+  document.getElementById('fConnCount').textContent = '0';
+
+  fBuildTableGrid();
+  fBuildQSteps();
+  fUpdateClaudePrompt();
+  fSetStatus('active', 'Session ready — tables can join now');
+  fToast('Session ' + F.sessionCode + ' launched!', 'ok');
+
+  // Simulate table connections over 5 seconds
+  let t = 1;
+  const si = setInterval(() => {
+    if (t > F.tableCount) { clearInterval(si); return; }
+    F.connectedTables.add(t);
+    fUpdateTableGrid();
+    t++;
+  }, 900);
+
+  // Broadcast state every second
+  setInterval(fBroadcast, 1000);
+}
+
+function fBroadcast() {
+  if (!F.sessionCode) return;
+  const s = loadSession(F.sessionCode);
+  if (!s) return;
+  s.phase = F.phase;
+  s.currentQ = F.currentQ;
+  s.secondsLeft = F.secondsLeft;
+  s.lastUpdate = Date.now();
+  saveSession(F.sessionCode, s);
+}
+
+function fNext() {
+  if (F.phase === 'idle') {
+    fLaunchQ(1);
+  } else if (F.phase.startsWith('q')) {
+    fEndQ(parseInt(F.phase[1]));
+  }
+}
+
+function fPrev() {}
+
+function fLaunchQ(n) {
+  F.currentQ = n;
+  F.phase = 'q' + n;
+  F.totalSeconds = F.durations[n-1];
+  F.secondsLeft = F.totalSeconds;
+  clearInterval(F.timerInterval);
+  F.timerInterval = setInterval(() => {
+    F.secondsLeft = Math.max(0, F.secondsLeft - 1);
+    fUpdatePreview();
+    if (F.secondsLeft <= 0) { clearInterval(F.timerInterval); fEndQ(n); }
+  }, 1000);
+  for (let i=1; i<=F.tableCount; i++) F.recordingTables.add(i);
+  document.getElementById('fPreviewRec').classList.add('on');
+  document.getElementById('orb1').style.opacity = '0.5';
+  fUpdateTableGrid();
+  fUpdateQSteps();
+  fUpdatePreview();
+  fUpdateNextBtn();
+  fSetStatus('recording', 'Recording Q' + n);
+  document.getElementById('fStageLabel').textContent = 'Q' + n + ' LIVE';
+  document.getElementById('fPrevBtn').disabled = n <= 1;
+  fToast('Q' + n + ' started — all tables recording', 'info');
+}
+
+function fEndQ(n) {
+  clearInterval(F.timerInterval);
+  F.recordingTables.clear();
+  document.getElementById('fPreviewRec').classList.remove('on');
+  document.getElementById('orb1').style.opacity = '0.25';
+  fUpdateTableGrid();
+  fSaveRecording(n);
+  F.phase = 'transition' + n;
+  F.transLeft = F.transTime;
+  fUpdatePreview();
+  fUpdateNextBtn();
+  fSetStatus('active', 'Transition after Q' + n);
+  document.getElementById('fNextBtn').style.display = 'none';
+  document.getElementById('fEndTransBtn').style.display = 'flex';
+  document.getElementById('fHint').textContent = 'Transition...';
+  clearInterval(F.transInterval);
+  F.transInterval = setInterval(() => {
+    F.transLeft = Math.max(0, F.transLeft - 1);
+    fUpdatePreview();
+    if (F.transLeft <= 0) {
+      clearInterval(F.transInterval);
+      if (n < 3) fAutoAdvance(n);
+      else fComplete();
+    }
+  }, 1000);
+  fUpdateQSteps();
+  fToast('Q' + n + ' complete — recording saved ✓', 'ok');
+}
+
+function fEndTrans() {
+  clearInterval(F.transInterval);
+  const n = F.currentQ;
+  if (n < 3) fAutoAdvance(n);
+  else fComplete();
+}
+
+function fAutoAdvance(n) {
+  document.getElementById('fNextBtn').style.display = 'flex';
+  document.getElementById('fEndTransBtn').style.display = 'none';
+  document.getElementById('fHint').textContent = '';
+  fLaunchQ(n + 1);
+}
+
+function fComplete() {
+  F.phase = 'complete';
+  document.getElementById('fNextBtn').disabled = true;
+  document.getElementById('fNextBtn').textContent = 'Complete';
+  document.getElementById('fEndTransBtn').style.display = 'none';
+  document.getElementById('fComplete').classList.add('on');
+  fSetStatus('active', 'Session complete');
+  fUpdatePreview();
+  fUpdateQSteps();
+  fToast('Workshop complete! 🎉', 'ok');
+}
+
+// --- PREVIEW ---
+function fUpdatePreview() {
+  const body = document.getElementById('fPreviewBody');
+  const p = F.phase;
+
+  if (p === 'idle') {
+    body.innerHTML = `<div class="preview-phase">Waiting to start</div><div class="preview-q" style="color:var(--muted)">Workshop will begin shortly.</div>`;
+    return;
+  }
+  if (p.startsWith('q') && p.length === 2) {
+    const n = parseInt(p[1]);
+    const m = String(Math.floor(F.secondsLeft/60)).padStart(2,'0');
+    const s = String(F.secondsLeft%60).padStart(2,'0');
+    const cls = F.secondsLeft<=60?'urg':F.secondsLeft<=120?'warn':'';
+    body.innerHTML = `<div class="preview-phase">Question ${n} of 3</div><div class="preview-q">${F.questions[n-1]}</div><div class="preview-clock ${cls}">${m}:${s}</div>`;
+    return;
+  }
+  if (p.startsWith('transition')) {
+    const n = parseInt(p.replace('transition',''));
+    body.innerHTML = `<div class="preview-phase" style="color:var(--green)">Q${n} Complete</div><div class="preview-q">${n<3?'Preparing Q'+(n+1)+'...':'Final question done'}</div><div class="preview-clock" style="font-size:32px;color:var(--yellow)">${F.transLeft}s</div>`;
+    return;
+  }
+  if (p === 'complete') {
+    body.innerHTML = `<div class="preview-phase" style="color:var(--green)">🎉 Workshop Complete</div><div class="preview-q" style="color:var(--muted)">Thank you for participating</div>`;
+  }
+}
+
+function fUpdateNextBtn() {
+  const btn = document.getElementById('fNextBtn');
+  if (F.phase === 'idle') { btn.textContent = 'Start Session →'; return; }
+  if (F.phase.startsWith('q')) {
+    const n = parseInt(F.phase[1]);
+    btn.textContent = n < 3 ? 'End Q' + n + ' →' : 'End Session →';
+  }
+}
+
+// --- TABLE GRID ---
+function fBuildTableGrid() {
+  const g = document.getElementById('fTablesGrid');
+  g.innerHTML = '';
+  for (let i=1; i<=F.tableCount; i++) {
+    const d = document.createElement('div');
+    d.className = 'table-cell';
+    d.id = 'ftbl-' + i;
+    d.innerHTML = `<div class="table-cell-num">${i}</div><div class="table-cell-state">Waiting</div>`;
+    g.appendChild(d);
+  }
+}
+
+function fUpdateTableGrid() {
+  for (let i=1; i<=F.tableCount; i++) {
+    const el = document.getElementById('ftbl-' + i);
+    if (!el) continue;
+    const rec = F.recordingTables.has(i);
+    const con = F.connectedTables.has(i);
+    el.className = 'table-cell' + (rec?' recording':con?' connected':'');
+    el.querySelector('.table-cell-state').textContent = rec?'REC':con?'Live':'Waiting';
+  }
+  document.getElementById('fConnCount').textContent = F.connectedTables.size;
+}
+
+// --- Q STEPS ---
+function fBuildQSteps() {
+  const el = document.getElementById('fQSteps');
+  el.innerHTML = F.questions.map((q,i) => `
+    <div class="q-step" id="fqs-${i+1}">
+      <div class="q-step-icon">${i+1}</div>
+      <div class="q-step-info">
+        <div class="q-step-meta">Q${i+1} · ${fFmt(F.durations[i])}</div>
+        <div class="q-step-text">${q}</div>
+      </div>
+      <div class="q-step-status">Pending</div>
+    </div>
+  `).join('');
+}
+
+function fUpdateQSteps() {
+  F.questions.forEach((_,i) => {
+    const el = document.getElementById('fqs-'+(i+1));
+    if (!el) return;
+    const n = i+1;
+    const s = el.querySelector('.q-step-status');
+    if (F.phase==='q'+n || F.phase==='transition'+n) {
+      el.className = 'q-step active';
+      s.textContent = F.phase==='q'+n ? 'Live' : 'Done';
+    } else if (F.currentQ > n || F.phase==='complete') {
+      el.className = 'q-step done'; s.textContent = 'Done ✓';
+    } else {
+      el.className = 'q-step'; s.textContent = 'Pending';
+    }
+  });
+}
+
+// --- RECORDINGS ---
+function fSaveRecording(n) {
+  for (let t=1; t<=F.tableCount; t++) {
+    F.recordings.push({ q: n, table: t, dur: F.durations[n-1], time: new Date().toLocaleTimeString() });
+  }
+  fUpdateRecList();
+  fUpdateClaudePrompt();
+}
+
+function fUpdateRecList() {
+  const el = document.getElementById('fRecList');
+  if (!F.recordings.length) { el.innerHTML = '<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:16px">No recordings yet</div>'; return; }
+  const byQ = {};
+  F.recordings.forEach(r => { if(!byQ[r.q]) byQ[r.q]=[]; byQ[r.q].push(r); });
+  el.innerHTML = Object.entries(byQ).map(([q,recs]) => `
+    <div style="margin-bottom:8px">
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Question ${q}</div>
+      ${recs.map(r=>`
+        <div class="rec-item">
+          <div><div class="rec-name">Table ${r.table} — Q${r.q}</div><div class="rec-meta">${fFmt(r.dur)} · ${r.time}</div></div>
+          <button class="rec-dl" onclick="fDlRec(${r.q},${r.table})">↓</button>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function fDlRec(q, t) {
+  // In production this downloads the actual audio blob
+  // The participant page stores blobs in memory and triggers download at end of each question
+  fToast('Recording Q' + q + ' Table ' + t + ' — in production this triggers audio download. See participant device for file.', 'info');
+}
+
+// --- CLAUDE PROMPT ---
+function fUpdateClaudePrompt() {
+  const el = document.getElementById('fClaudePrompt');
+  const doneQs = [...new Set(F.recordings.map(r=>r.q))];
+  const latest = doneQs.length ? Math.max(...doneQs) : 1;
+  const q = F.questions[latest-1] || F.questions[0];
+  el.textContent = `You are analysing a workshop discussion. Here are transcripts from ${F.tableCount} tables all discussing:\n\n"${q}"\n\n[PASTE TRANSCRIPTS BELOW — one block per table]\n\nTable 1: ...\nTable 2: ...\nTable 3: ...\nTable 4: ...\n\nIdentify the 3-5 key themes across all tables. For each theme:\n1. Name it (3-5 words)\n2. Summarise in 1-2 sentences\n3. Note which tables raised it\n4. Flag any outlier perspectives\n\nFormat for sharing on screen. Be concise.`;
+}
+
+function fCopyCode() {
+  navigator.clipboard.writeText(F.sessionCode).then(() => fToast('Code copied: ' + F.sessionCode, 'ok')).catch(() => fToast('Code: ' + F.sessionCode, 'info'));
+}
+
+function fCopyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('fClaudePrompt').textContent)
+    .then(() => fToast('Claude prompt copied!', 'ok'))
+    .catch(() => fToast('Select and copy the text manually', 'info'));
+}
+
+function fSetStatus(type, text) {
+  document.getElementById('fStatusDot').className = 'status-dot ' + type;
+  document.getElementById('fStatusText').textContent = text;
+}
+
+function fFmt(sec) {
+  return Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0');
+}
+
+function fToast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const icons = {ok:'✓',err:'✕',info:'ℹ'};
+  const cols = {ok:'var(--green)',err:'var(--red)',info:'var(--accent2)'};
+  t.innerHTML = `<span style="color:${cols[type]}">${icons[type]}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+// ============================================================
+// PARTICIPANT
+// ============================================================
+const P = {
+  code: '',
+  tableNum: 1,
+  session: null,
+  phase: 'join',
+  pollInterval: null,
+  timerInterval: null,
+  secondsLeft: 0,
+  totalSeconds: 0,
+  transLeft: 0,
+  transInterval: null,
+  mediaRecorder: null,
+  audioChunks: [],
+  isRecording: false,
+};
+
+function pInit() {
+  // Pre-fill from URL
+  const urlCode = new URLSearchParams(window.location.search).get('session');
+  if (urlCode) document.getElementById('pCodeInput').value = urlCode.toUpperCase();
+  document.getElementById('pCodeInput').addEventListener('keydown', e => { if(e.key==='Enter') pJoin(); });
+  pBuildPips();
+  // Request wake lock to prevent iPad sleep
+  if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible' && 'wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{}); });
+}
+
+function pJoin() {
+  const code = document.getElementById('pCodeInput').value.trim().toUpperCase();
+  if (code.length < 4) { document.getElementById('pJoinErr').textContent = 'Enter a valid session code.'; return; }
+  
+  const session = loadSession(code);
+  if (!session) {
+    // Try the latest code as a fallback
+    const latestCode = loadLatestCode();
+    if (latestCode && latestCode.toUpperCase() === code) {
+      document.getElementById('pJoinErr').textContent = 'Session found — joining...';
+    } else {
+      document.getElementById('pJoinErr').textContent = 'Session not found. Make sure the facilitator has launched the session on this same device/browser.';
+      return;
+    }
+  }
+
+  P.code = code;
+  P.tableNum = parseInt(document.getElementById('pTableSel').value);
+  P.session = session || loadSession(loadLatestCode());
+  document.getElementById('pJoinErr').textContent = '';
+  document.getElementById('pWaitTitle').textContent = P.session?.title || 'Workshop';
+  document.getElementById('pWaitTable').textContent = P.tableNum;
+  document.getElementById('pQTableNum').textContent = P.tableNum;
+  pShow('pWaiting');
+  pStartPolling();
+}
+
+function pStartPolling() {
+  clearInterval(P.pollInterval);
+  P.pollInterval = setInterval(() => {
+    const s = loadSession(P.code);
+    if (!s) return;
+    P.session = s;
+    const newPhase = s.phase || 'waiting';
+    if (newPhase !== P.phase) {
+      P.phase = newPhase;
+      pHandlePhase(s);
+    }
+    // Sync timer drift
+    if (newPhase.match(/^q\d$/) && s.secondsLeft !== undefined) {
+      if (Math.abs(P.secondsLeft - s.secondsLeft) > 3) {
+        P.secondsLeft = s.secondsLeft;
+        pUpdateTimer();
+      }
+    }
+    if (newPhase.startsWith('transition') && s.secondsLeft !== undefined) {
+      // sync transition counter if needed
+    }
+  }, 600);
+}
+
+function pHandlePhase(s) {
+  const ph = s.phase;
+  if (ph === 'waiting') {
+    pShow('pWaiting');
+  } else if (ph.match(/^q\d$/)) {
+    const n = parseInt(ph[1]);
+    pStartQuestion(n, s);
+  } else if (ph.startsWith('transition')) {
+    const n = parseInt(ph.replace('transition',''));
+    pShowTransition(n, s);
+  } else if (ph === 'complete') {
+    pStop();
+    pShow('pComplete');
+  }
+}
+
+function pStartQuestion(n, s) {
+  clearInterval(P.timerInterval);
+  clearInterval(P.transInterval);
+  P.totalSeconds = s.durations[n-1];
+  P.secondsLeft = s.secondsLeft !== undefined ? s.secondsLeft : P.totalSeconds;
+
+  document.getElementById('pQContext').textContent = 'QUESTION ' + n + ' OF 3';
+  document.getElementById('pQLabel').textContent = 'Q' + n + ' of 3';
+  document.getElementById('pQText').textContent = s.questions[n-1];
+  pUpdatePips(n);
+  pUpdateTimer();
+  pShow('pQuestion');
+
+  document.getElementById('pRecBadge').classList.add('on');
+  document.getElementById('pAudioViz').style.display = 'flex';
+  document.getElementById('orb1').style.opacity = '0.55';
+
+  P.timerInterval = setInterval(() => {
+    P.secondsLeft = Math.max(0, P.secondsLeft - 1);
+    pUpdateTimer();
+  }, 1000);
+
+  pStartRecording(n);
+}
+
+function pShowTransition(n, s) {
+  clearInterval(P.timerInterval);
+  pStop();
+  document.getElementById('pRecBadge').classList.remove('on');
+  document.getElementById('pAudioViz').style.display = 'none';
+  document.getElementById('orb1').style.opacity = '0.3';
+
+  document.getElementById('pTransTitle').textContent = '✓ Question ' + n + ' Complete';
+  const next = n < 3 ? n + 1 : null;
+  document.getElementById('pTransSub').textContent = next ? 'Themes being surfaced now...' : 'All questions complete!';
+
+  const nextArea = document.getElementById('pNextArea');
+  if (next && s.questions[n]) {
+    nextArea.style.display = 'block';
+    document.getElementById('pNextQ').textContent = s.questions[n];
+  } else { nextArea.style.display = 'none'; }
+
+  // Theme placeholder chips
+  setTimeout(() => {
+    const chips = pPlaceholderThemes(n);
+    if (chips.length) {
+      const box = document.getElementById('pThemesBox');
+      box.style.display = 'block';
+      document.getElementById('pThemeChips').innerHTML = chips.map((c,i) => `<div class="p-chip" style="animation-delay:${i*0.15}s">${c}</div>`).join('');
+    }
+  }, 2500);
+
+  P.transLeft = s.transTime || 90;
+  document.getElementById('pTransTimer').textContent = next ? `Next question in ${P.transLeft}s` : 'Wrapping up...';
+
+  clearInterval(P.transInterval);
+  P.transInterval = setInterval(() => {
+    P.transLeft = Math.max(0, P.transLeft - 1);
+    if (next) document.getElementById('pTransTimer').textContent = `Next question in ${P.transLeft}s`;
+    if (P.transLeft <= 0) clearInterval(P.transInterval);
+  }, 1000);
+
+  document.getElementById('pThemesBox').style.display = 'none';
+  pShow('pTransition');
+}
+
+function pPlaceholderThemes(q) {
+  const t = {
+    1: ['Supply chain complexity','Access to capital','Market differentiation','Regulatory burden'],
+    2: ['Mentorship networks','Distributor connections','Export pathway support','Technical expertise'],
+    3: ['Collective procurement','Shared export pathways','Industry advocacy','Peer mentoring'],
+  };
+  return t[q] || [];
+}
+
+// --- Timer ---
+function pUpdateTimer() {
+  const m = String(Math.floor(P.secondsLeft/60)).padStart(2,'0');
+  const s = String(P.secondsLeft%60).padStart(2,'0');
+  const el = document.getElementById('pTimerNum');
+  el.textContent = m+':'+s;
+  const ratio = P.totalSeconds > 0 ? P.secondsLeft / P.totalSeconds : 1;
+  el.className = 'p-timer-num' + (ratio<0.2?' urg':ratio<0.33?' warn':'');
+  // Ring
+  const ring = document.getElementById('pTimerRing');
+  ring.style.strokeDashoffset = 283 * (1-ratio);
+  ring.style.stroke = ratio<0.2?'var(--red)':ratio<0.33?'var(--yellow)':'var(--accent)';
+}
+
+// --- Pips ---
+function pBuildPips() {
+  const el = document.getElementById('pPips');
+  el.innerHTML = [1,2,3].map(i=>`<div class="p-pip" id="ppip-${i}"></div>`).join('');
+}
+
+function pUpdatePips(n) {
+  [1,2,3].forEach(i => {
+    const p = document.getElementById('ppip-'+i);
+    if (!p) return;
+    p.className = 'p-pip' + (i===n?' active':i<n?' done':'');
+  });
+}
+
+// --- Screen ---
+function pShow(id) {
+  document.querySelectorAll('.p-screen').forEach(s => s.classList.add('off'));
+  const el = document.getElementById(id);
+  el.classList.remove('off');
+}
+
+// --- Audio Recording ---
+async function pStartRecording(n) {
+  if (P.isRecording) pStop();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+    const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    P.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    P.audioChunks = [];
+    P.mediaRecorder.ondataavailable = e => { if(e.data.size>0) P.audioChunks.push(e.data); };
+    P.mediaRecorder.onstop = () => {
+      const blob = new Blob(P.audioChunks, { type: P.mediaRecorder.mimeType || 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      const ext = (P.mediaRecorder.mimeType||'').includes('ogg')?'ogg':(P.mediaRecorder.mimeType||'').includes('mp4')?'mp4':'webm';
+      // Auto-download the recording
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workshop_q${n}_table${P.tableNum}_${Date.now()}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    P.mediaRecorder.start(2000);
+    P.isRecording = true;
+  } catch(e) {
+    // Demo mode — no mic permission or not supported
+    P.isRecording = false;
+  }
+}
+
+function pStop() {
+  if (P.mediaRecorder && P.mediaRecorder.state !== 'inactive') {
+    try { P.mediaRecorder.stop(); } catch(e){}
+  }
+  P.isRecording = false;
+}
+
+// ============================================================
+// ENTRY POINT — check for existing session on load
+// ============================================================
+window.addEventListener('load', () => {
+  // If there's a session code in URL, skip mode selector for participant
+  const sp = new URLSearchParams(window.location.search);
+  if (sp.get('session') && !sp.get('mode')) {
+    launchParticipant();
+  }
+});
+</script>
+</body>
+</html>
