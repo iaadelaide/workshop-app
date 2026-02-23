@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>IA Workshop Session</title>
+<link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png?format=100w"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Epilogue:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0b1a; --s1:#13112a; --s2:#1a1635;
+  --b1:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --ac:#7c3aed; --ac2:#8b5cf6; --acd:rgba(124,58,237,.15);
+  --gr:#22c55e; --grd:rgba(34,197,94,.1);
+  --rd:#ef4444; --rdd:rgba(239,68,68,.1);
+  --am:#f59e0b;
+  --tx:#ede9fe; --mu:#4c4a6b; --mu2:#6b6890;
+  --mono:'DM Mono',monospace; --sans:'Epilogue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{height:100%;}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);
+  min-height:100%;display:flex;flex-direction:column;
+  align-items:center;padding:1.5rem 1.25rem 3rem;
+  position:relative;overflow-x:hidden;}
+
+/* Atmosphere */
+.g1{position:fixed;top:-15%;right:-10%;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(124,58,237,.07) 0%,transparent 65%);pointer-events:none;z-index:0;}
+.g2{position:fixed;bottom:-15%;left:-10%;width:450px;height:450px;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,.05) 0%,transparent 65%);pointer-events:none;z-index:0;}
+
+.wrap{position:relative;z-index:1;width:100%;max-width:500px;
+  display:flex;flex-direction:column;align-items:center;gap:1.1rem;}
+
+/* Status */
+.pill{display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--mono);font-size:.66rem;
+  padding:.32rem .8rem;border-radius:2rem;
+  background:rgba(255,255,255,.03);border:1px solid var(--b1);transition:all .3s;}
+.pill.ok{border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.05);}
+.pill.err{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.05);}
+.pdot{width:5px;height:5px;border-radius:50%;background:var(--mu);transition:background .3s;}
+.pill.ok .pdot{background:var(--gr);box-shadow:0 0 5px var(--gr);}
+.pill.err .pdot{background:var(--rd);}
+.ptxt{color:var(--mu2);transition:color .3s;}
+.pill.ok .ptxt,.pill.ok{color:var(--tx);}
+
+/* ── WAITING SCREEN ── */
+.waiting{display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center;width:100%;}
+.ia-img{height:30px;object-fit:contain;filter:brightness(0) invert(1);opacity:.78;margin-bottom:.15rem;}
+.big-title{font-size:clamp(2rem,9vw,3.5rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;}
+.sub{font-size:.9rem;color:var(--mu2);line-height:1.6;max-width:320px;}
+
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:.8rem;padding:1.35rem;width:100%;text-align:left;}
+.card h3{font-size:.92rem;font-weight:700;margin-bottom:.28rem;}
+.card p{font-size:.77rem;color:var(--mu2);line-height:1.55;margin-bottom:.9rem;}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;}
+.tbtn{font-family:var(--mono);font-size:1rem;font-weight:500;
+  padding:.9rem;border-radius:.45rem;
+  border:2px solid var(--b1);background:var(--s2);
+  color:var(--tx);cursor:pointer;transition:all .15s;text-align:center;}
+.tbtn:hover{border-color:rgba(124,58,237,.4);background:var(--acd);}
+.tbtn.sel{border-color:var(--ac);background:var(--acd);color:var(--ac2);}
+.join-btn{font-family:var(--sans);font-size:.9rem;font-weight:700;
+  padding:.75rem;border-radius:.45rem;border:none;
+  background:var(--ac);color:#fff;cursor:pointer;
+  width:100%;margin-top:.8rem;transition:background .15s;}
+.join-btn:hover{background:var(--ac2);}
+.join-btn:disabled{opacity:.35;cursor:not-allowed;}
+.tbadge{display:inline-flex;align-items:center;gap:.45rem;
+  font-family:var(--mono);font-size:.78rem;
+  padding:.42rem .95rem;border-radius:2rem;
+  background:var(--acd);border:1px solid rgba(139,92,246,.28);color:var(--ac2);}
+
+/* ── PHASE CARD (replaces all phase-specific views) ── */
+.phase-card{background:var(--s1);border:1px solid var(--b1);
+  border-radius:.8rem;width:100%;overflow:hidden;display:none;}
+.pc-header{padding:1rem 1.2rem;border-bottom:1px solid var(--b1);}
+.pc-meta{display:flex;align-items:center;gap:.5rem;margin-bottom:.42rem;}
+.pc-badge{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;
+  letter-spacing:.1em;padding:.16rem .48rem;border-radius:2rem;}
+.pc-badge.discuss{background:var(--grd);color:var(--gr);border:1px solid rgba(34,197,94,.3);}
+.pc-badge.reportback{background:rgba(245,158,11,.1);color:var(--am);border:1px solid rgba(245,158,11,.3);}
+.pc-session{font-family:var(--mono);font-size:.6rem;color:var(--mu2);}
+.pc-timer{font-family:var(--mono);font-size:1.05rem;color:var(--ac2);
+  margin-left:auto;transition:color .3s;font-weight:500;}
+.pc-timer.warn{color:var(--am);}
+.pc-timer.crit{color:var(--rd);animation:flicker .8s infinite;}
+@keyframes flicker{0%,100%{opacity:1;}50%{opacity:.55;}}
+.pc-body{padding:1rem 1.2rem;}
+.pc-question{font-size:clamp(.95rem,3vw,1.25rem);font-weight:700;
+  line-height:1.35;letter-spacing:-.01em;margin-bottom:.5rem;}
+.pc-instruction{font-family:var(--mono);font-size:.66rem;color:var(--mu2);
+  line-height:1.6;}
+
+/* Report-back prompts */
+.rb-list{display:flex;flex-direction:column;gap:.45rem;margin-top:.75rem;}
+.rb-item{background:var(--s2);border:1px solid rgba(245,158,11,.18);
+  border-radius:.45rem;padding:.7rem .9rem;
+  display:flex;align-items:flex-start;gap:.6rem;}
+.rb-num{font-family:var(--mono);font-size:.62rem;color:var(--am);
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.22);
+  padding:.13rem .4rem;border-radius:.2rem;flex-shrink:0;margin-top:.1rem;}
+.rb-text{font-size:.82rem;font-weight:600;line-height:1.4;}
+
+/* ── RECORDING SECTION ── */
+.rec-wrap{display:flex;flex-direction:column;align-items:center;gap:.8rem;width:100%;}
+
+/* Countdown ring */
+.countdown-ring{position:relative;width:120px;height:120px;flex-shrink:0;}
+.countdown-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--b2);stroke-width:3;}
+.ring-prog{fill:none;stroke:var(--ac2);stroke-width:3;
+  stroke-linecap:round;stroke-dasharray:339.3;stroke-dashoffset:0;
+  transition:stroke-dashoffset 1s linear,stroke .3s;}
+.ring-prog.warn{stroke:var(--am);}
+.ring-prog.crit{stroke:var(--rd);}
+.ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.1rem;}
+.ring-time{font-family:var(--mono);font-size:1.5rem;font-weight:500;
+  color:var(--tx);line-height:1;}
+.ring-dur{font-family:var(--mono);font-size:.6rem;color:var(--mu2);}
+
+/* Record button */
+.rec-btn-outer{position:relative;display:flex;align-items:center;justify-content:center;}
+.rec-ring-anim{position:absolute;width:82px;height:82px;border-radius:50%;
+  border:2px solid rgba(124,58,237,.2);
+  animation:rpa 2s ease infinite;opacity:0;pointer-events:none;}
+.rec-btn-outer.recording .rec-ring-anim{opacity:1;}
+@keyframes rpa{0%{transform:scale(1);opacity:.5;}100%{transform:scale(1.6);opacity:0;}}
+.rec-btn{width:70px;height:70px;border-radius:50%;
+  border:2px solid var(--b2);background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;cursor:pointer;transition:all .2s;
+  position:relative;z-index:1;}
+.rec-btn:hover{border-color:rgba(124,58,237,.45);background:var(--acd);}
+.rec-btn-outer.recording .rec-btn{
+  border-color:var(--rd);background:var(--rdd);
+  animation:recpulse 1.5s ease infinite;}
+@keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3);}50%{box-shadow:0 0 0 12px rgba(239,68,68,0);}}
+.rec-hint{font-family:var(--mono);font-size:.68rem;color:var(--mu2);
+  text-align:center;letter-spacing:.04em;transition:color .2s;}
+.rec-hint.recording{color:var(--rd);}
+.rec-dur-label{font-family:var(--mono);font-size:.95rem;font-weight:500;
+  color:var(--rd);display:none;}
+.rec-btn-outer.recording~.rec-dur-label{display:block;}
+
+/* Viz */
+.viz{display:flex;align-items:center;gap:3px;height:22px;opacity:0;transition:opacity .3s;}
+.viz.on{opacity:1;}
+.vb{width:3px;border-radius:2px;background:var(--ac2);height:4px;transition:height .08s;}
+
+/* Transcript result */
+.result{background:var(--s1);border:1px solid var(--b1);
+  border-radius:.7rem;padding:1.1rem;width:100%;display:none;}
+.r-label{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--mu2);margin-bottom:.5rem;
+  display:flex;align-items:center;gap:.4rem;}
+.r-dot{width:5px;height:5px;border-radius:50%;background:var(--gr);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.r-text{font-size:.8rem;line-height:1.65;color:rgba(237,233,254,.72);}
+.r-status{font-family:var(--mono);font-size:.63rem;margin-top:.55rem;
+  display:flex;align-items:center;gap:.35rem;}
+.r-status.sending{color:var(--ac2);}
+.r-status.done{color:var(--gr);}
+.r-status.err{color:var(--rd);}
+
+/* Themes card — only for phases 1 & 3 */
+.themes-card{background:var(--s1);border:1px solid rgba(139,92,246,.22);
+  border-radius:.7rem;padding:1rem 1.1rem;width:100%;display:none;}
+.th-label{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--ac2);margin-bottom:.5rem;}
+.tags-row{display:flex;flex-wrap:wrap;gap:.32rem;}
+.ttag{font-family:var(--mono);font-size:.63rem;padding:.2rem .52rem;border-radius:2rem;
+  background:var(--acd);color:var(--ac2);border:1px solid rgba(139,92,246,.2);
+  animation:tin .3s ease;}
+@keyframes tin{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
+.gen{font-family:var(--mono);font-size:.63rem;color:var(--mu2);
+  display:flex;align-items:center;gap:.35rem;}
+.spin{display:inline-block;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Submit */
+.sub-btn{font-family:var(--sans);font-size:.8rem;font-weight:600;
+  padding:.52rem 1.1rem;border-radius:.38rem;
+  border:1px solid var(--b2);background:var(--s2);
+  color:var(--tx);cursor:pointer;transition:all .15s;display:none;width:100%;}
+.sub-btn:hover{background:rgba(255,255,255,.06);}
+
+.ia-credit{font-family:var(--mono);font-size:.58rem;color:var(--mu);
+  letter-spacing:.07em;text-align:center;margin-top:.5rem;}
+</style>
+</head>
+<body>
+<div class="g1"></div><div class="g2"></div>
+
+<div class="wrap">
+
+  <!-- Status -->
+  <div class="pill" id="pill"><div class="pdot"></div><span class="ptxt" id="pillTxt">Connecting…</span></div>
+
+  <!-- WAITING SCREEN -->
+  <div class="waiting" id="waiting">
+    <img class="ia-img" src="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png?format=300w" alt="IA" onerror="this.style.display='none'"/>
+    <div class="big-title" id="bigTitle">Workshop<br>Session</div>
+    <div class="sub" id="bigSub">Your facilitator will start the session shortly.</div>
+
+    <div class="card" id="setupCard">
+      <h3>Which table are you at?</h3>
+      <p>Select your table. You'll record and report back during each session.</p>
+      <div class="tgrid">
+        <button class="tbtn" onclick="selT(1)">Table 1</button>
+        <button class="tbtn" onclick="selT(2)">Table 2</button>
+        <button class="tbtn" onclick="selT(3)">Table 3</button>
+        <button class="tbtn" onclick="selT(4)">Table 4</button>
+      </div>
+      <button class="join-btn" id="joinBtn" onclick="joinSess()" disabled>Join Session →</button>
+    </div>
+
+    <div class="tbadge" id="tbadge" style="display:none;">📍 <span id="tbNum">Table 1</span></div>
+  </div>
+
+  <!-- PHASE CARD -->
+  <div class="phase-card" id="phaseCard">
+    <div class="pc-header">
+      <div class="pc-meta">
+        <span class="pc-badge discuss" id="pcBadge">Discussion</span>
+        <span class="pc-session" id="pcSession">Session 1 · Phase 1</span>
+        <span class="pc-timer" id="pcTimer">15:00</span>
+      </div>
+      <div class="pc-body" style="padding:0;">
+        <div class="pc-question" id="pcQuestion">Loading…</div>
+        <div class="pc-instruction" id="pcInstruction"></div>
+        <!-- Report-back prompts injected here for reportback phases -->
+        <div id="rbList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECORDING SECTION -->
+  <div class="rec-wrap" id="recWrap" style="display:none;">
+    <div class="viz" id="viz">
+      <div class="vb" id="v1"></div><div class="vb" id="v2"></div>
+      <div class="vb" id="v3"></div><div class="vb" id="v4"></div>
+      <div class="vb" id="v5"></div><div class="vb" id="v6"></div>
+      <div class="vb" id="v7"></div>
+    </div>
+    <div class="countdown-ring" id="countdownRing">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="ring-prog" id="ringProg" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="ring-inner">
+        <div class="ring-time" id="ringTime">15:00</div>
+        <div class="ring-dur" id="ringDur">recording: 0:00</div>
+      </div>
+    </div>
+    <div class="rec-btn-outer" id="recOuter">
+      <div class="rec-ring-anim"></div>
+      <button class="rec-btn" id="recBtn" onclick="toggleRec()">🎙</button>
+    </div>
+    <div class="rec-dur-label" id="recDurLabel">0:00</div>
+    <div class="rec-hint" id="recHint">Tap to start recording</div>
+  </div>
+
+  <!-- TRANSCRIPT RESULT -->
+  <div class="result" id="result">
+    <div class="r-label"><div class="r-dot"></div>Transcript</div>
+    <div class="r-text" id="rText"></div>
+    <div class="r-status" id="rStatus"></div>
+  </div>
+  <button class="sub-btn" id="subBtn" onclick="manualSubmit()">✓ Submit to Facilitator</button>
+
+  <!-- THEMES (only shown for phases 1 & 3) -->
+  <div class="themes-card" id="themesCard">
+    <div class="th-label">Key themes from your table</div>
+    <div id="tagsRow" class="tags-row"></div>
+  </div>
+
+  <div class="ia-credit">innovationarchitects.com.au</div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const OAI='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';
+
+// Phase definitions (must match facilitator)
+const PHASES=[
+  {id:1,session:'Session 1',phase:'Group Discussion',text:'Where do we want to go?',dur:900,type:'discuss',themes:true,
+   instruction:'Discuss as a table. Record your conversation — your themes will appear below.',reportPrompts:[]},
+  {id:2,session:'Session 1',phase:'Report Back',text:'Session 1 — Spokesperson Report Back',dur:300,type:'reportback',themes:false,
+   instruction:'Your table spokesperson reports back to the room. Record their delivery.',
+   reportPrompts:[{num:'01',text:'One Future State Headline for 2040'},{num:'02',text:'Three defining features of that future'}]},
+  {id:3,session:'Session 2',phase:'Group Discussion',text:'How do we get to the future state?',dur:900,type:'discuss',themes:true,
+   instruction:'Discuss as a table. Record your conversation — your themes will appear below.',reportPrompts:[]},
+  {id:4,session:'Session 2',phase:'Report Back',text:'Session 2 — Spokesperson Report Back',dur:300,type:'reportback',themes:false,
+   instruction:'Your table spokesperson reports back to the room. Record their delivery.',
+   reportPrompts:[
+     {num:'01',text:'Priority shifts needed'},
+     {num:'02',text:'Key actors responsible for implementation'},
+     {num:'03',text:'Where can Queensland Government play a role?'}
+   ]},
+  {id:5,session:'Synthesis',phase:'Collective Themes',text:'Facilitator is presenting collective insights',dur:0,type:'synthesis',themes:false,
+   instruction:'Your facilitator is sharing the collective themes from all tables.',reportPrompts:[]},
+];
+
+let db=null,sRef=null,tRef=null;
+let code='',tableNum=null,curP=0,status='waiting';
+let phDur=900; // current phase total duration (for ring)
+let mediaRec=null,chunks=[],isRec=false;
+let stream=null,ctx=null,analyser=null,vizInt=null,durInt=null;
+let recStart=null;
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+(function(){
+  const p=new URLSearchParams(location.search);
+  code=p.get('session')||'';
+  if(!code){setPill('err','No session code in URL');return;}
+  connect();
+})();
+
+function connect(){
+  firebase.initializeApp({
+    apiKey:'AIzaSyALhQTTwWLyXk4mVeckvbCuYjS1OS6RcZs',
+    databaseURL:'https://ia-workshop-app-default-rtdb.firebaseio.com',
+    projectId:'ia-workshop-app'
+  });
+  db=firebase.database();
+  sRef=db.ref('sessions/'+code);
+  db.ref('.info/connected').on('value',s=>setPill(s.val()?'ok':'err',s.val()?'Connected · Session '+code:'Reconnecting…'));
+
+  sRef.on('value',snap=>{
+    const s=snap.val(); if(!s){setPill('err','Session not found');return;}
+    status=s.status||'waiting';
+    const newP=s.currentPhase??s.currentQuestion??0;
+    const phChanged=newP!==curP;
+    curP=newP;
+    phDur=PHASES[curP]?.dur||900;
+
+    if(status==='live'&&tableNum) goLive();
+    if(status==='ended') showEnded();
+    if(status==='live'){
+      if(phChanged) renderPhase();
+      updateRingTimer(s.secondsLeft??phDur,phDur);
+    }
+  });
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────
+function selT(n){
+  tableNum=n;
+  document.querySelectorAll('.tbtn').forEach((b,i)=>b.classList.toggle('sel',i+1===n));
+  document.getElementById('joinBtn').disabled=false;
+}
+
+function joinSess(){
+  if(!tableNum) return;
+  tRef=sRef.child('tables/table'+tableNum);
+  tRef.update({connected:true,tableNumber:tableNum,joinedAt:firebase.database.ServerValue.TIMESTAMP});
+  tRef.onDisconnect().update({connected:false,recording:false});
+  document.getElementById('setupCard').style.display='none';
+  document.getElementById('tbadge').style.display='inline-flex';
+  document.getElementById('tbNum').textContent='Table '+tableNum;
+  if(status==='live') goLive();
+}
+
+function goLive(){
+  document.getElementById('waiting').style.display='none';
+  renderPhase();
+}
+
+// ── RENDER PHASE ──────────────────────────────────────────────────────────
+function renderPhase(){
+  const p=PHASES[curP];
+  if(!p) return;
+
+  // Phase card always visible
+  document.getElementById('phaseCard').style.display='block';
+  const badge=document.getElementById('pcBadge');
+  badge.textContent=p.type==='discuss'?'Discussion':p.type==='reportback'?'Report Back':'Synthesis';
+  badge.className='pc-badge '+p.type;
+  document.getElementById('pcSession').textContent=`${p.session} · ${p.phase}`;
+  document.getElementById('pcQuestion').textContent=p.text;
+  document.getElementById('pcInstruction').textContent=p.instruction;
+
+  // Report-back prompts
+  const rbList=document.getElementById('rbList');
+  if(p.reportPrompts?.length){
+    rbList.innerHTML=`<div class="rb-list">${p.reportPrompts.map(rp=>`
+      <div class="rb-item">
+        <span class="rb-num">${rp.num}</span>
+        <span class="rb-text">${rp.text}</span>
+      </div>`).join('')}</div>`;
+  } else {
+    rbList.innerHTML='';
+  }
+
+  // Show/hide recording section
+  const recWrap=document.getElementById('recWrap');
+  if(p.type==='synthesis'){
+    recWrap.style.display='none';
+    document.getElementById('result').style.display='none';
+    document.getElementById('subBtn').style.display='none';
+    document.getElementById('themesCard').style.display='none';
+  } else {
+    recWrap.style.display='flex';
+    // Re-listen for themes if discuss phase
+    if(p.themes) listenThemes();
+    else document.getElementById('themesCard').style.display='none';
+  }
+
+  // Update ring to full for this phase
+  updateRingTimer(phDur,phDur);
+}
+
+// ── TIMER RING ─────────────────────────────────────────────────────────────
+function updateRingTimer(s,total){
+  const circ=339.3;
+  const ratio=total>0?Math.max(0,s/total):1;
+  const offset=circ*(1-ratio);
+  const ring=document.getElementById('ringProg');
+  const timerEl=document.getElementById('pcTimer');
+
+  const timeStr=s>0?`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:'—:——';
+  document.getElementById('ringTime').textContent=timeStr;
+  timerEl.textContent=timeStr;
+
+  ring.style.strokeDashoffset=offset;
+  const cls='ring-prog'+(ratio<=.1?' crit':ratio<=.25?' warn':'');
+  ring.className=cls;
+  timerEl.className='pc-timer'+(ratio<=.1?' crit':ratio<=.25?' warn':'');
+}
+
+// ── RECORDING ─────────────────────────────────────────────────────────────
+async function toggleRec(){ isRec?stopRec():await startRec(); }
+
+async function startRec(){
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
+  catch(e){ setStatus('err','⚠ Microphone access denied'); return; }
+
+  chunks=[]; recStart=Date.now();
+  ctx=new AudioContext(); analyser=ctx.createAnalyser(); analyser.fftSize=32;
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  startViz(); startDur();
+
+  const mime=getMime();
+  mediaRec=new MediaRecorder(stream,{mimeType:mime});
+  mediaRec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+  mediaRec.onstop=process;
+  mediaRec.start(1000);
+  isRec=true;
+
+  if(tRef) tRef.update({recording:true});
+  document.getElementById('recOuter').classList.add('recording');
+  document.getElementById('recBtn').textContent='⏹';
+  document.getElementById('recHint').textContent='Recording… tap to stop & transcribe';
+  document.getElementById('recHint').classList.add('recording');
+  document.getElementById('result').style.display='none';
+  document.getElementById('subBtn').style.display='none';
+  setRStatus('','');
+}
+
+function stopRec(){
+  mediaRec.stop();
+  stream.getTracks().forEach(t=>t.stop());
+  stopViz(); stopDur();
+  isRec=false;
+  if(tRef) tRef.update({recording:false});
+  document.getElementById('recOuter').classList.remove('recording');
+  document.getElementById('recBtn').textContent='🎙';
+  document.getElementById('recHint').textContent='Tap to record';
+  document.getElementById('recHint').classList.remove('recording');
+  setRStatus('sending','⟳ Transcribing with Whisper…');
+}
+
+async function process(){
+  const dur=(Date.now()-recStart)/1000;
+  const blob=new Blob(chunks,{type:getMime()});
+  const rc=document.getElementById('result');
+  rc.style.display='block';
+  document.getElementById('rText').textContent='Processing…';
+
+  try{
+    const text=await whisper(blob,getMime());
+    document.getElementById('rText').textContent=text;
+    setRStatus('done','✓ Transcribed');
+    document.getElementById('subBtn').style.display='block';
+    await pushTx(text,dur);
+    setRStatus('done','✓ Sent to facilitator');
+    // Show theme loading state if this is a themes phase
+    const p=PHASES[curP];
+    if(p?.themes){
+      document.getElementById('themesCard').style.display='block';
+      document.getElementById('tagsRow').innerHTML='<div class="gen"><span class="spin">⟳</span> Analysing themes…</div>';
+      listenThemes();
+    }
+  }catch(e){
+    document.getElementById('rText').textContent='Error: '+e.message;
+    setRStatus('err','⚠ Transcription failed — submit manually');
+    document.getElementById('subBtn').style.display='block';
+  }
+}
+
+async function whisper(blob,mime){
+  const ext=mime.includes('ogg')?'ogg':mime.includes('mp4')?'mp4':'webm';
+  const fd=new FormData();
+  fd.append('file',blob,'rec.'+ext);
+  fd.append('model','whisper-1');
+  fd.append('language','en');
+  const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{
+    method:'POST',headers:{'Authorization':'Bearer '+OAI},body:fd});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+r.status);}
+  return (await r.json()).text;
+}
+
+async function pushTx(text,dur){
+  if(!sRef) return;
+  await sRef.child('transcripts').push({
+    tableNumber:tableNum,
+    phaseIndex:curP,
+    transcript:text,
+    duration:dur,
+    recordedAt:new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    submittedAt:firebase.database.ServerValue.TIMESTAMP,
+  });
+}
+
+// Listen for themes pushed to Firebase by the facilitator dashboard (for themes phases only)
+function listenThemes(){
+  const p=PHASES[curP];
+  if(!p?.themes||!tableNum) return;
+  sRef.child(`themes/table${tableNum}/phase${curP}`).on('value',snap=>{
+    const themes=snap.val();
+    if(!themes?.length) return;
+    const card=document.getElementById('themesCard');
+    card.style.display='block';
+    document.getElementById('tagsRow').innerHTML=themes.map(t=>`<span class="ttag">${t}</span>`).join('');
+  });
+}
+
+function manualSubmit(){
+  const t=document.getElementById('rText').textContent;
+  const valid=t&&!t.startsWith('Error')&&t!=='Processing…';
+  if(valid){pushTx(t,0);setRStatus('done','✓ Sent');}
+  else{
+    const inp=prompt('Type your key response:');
+    if(inp){document.getElementById('rText').textContent=inp;pushTx(inp,0);setRStatus('done','✓ Sent');}
+  }
+  document.getElementById('subBtn').style.display='none';
+}
+
+function showEnded(){
+  document.getElementById('phaseCard').style.display='none';
+  document.getElementById('recWrap').style.display='none';
+  document.getElementById('result').style.display='none';
+  document.getElementById('themesCard').style.display='none';
+  document.getElementById('subBtn').style.display='none';
+  document.getElementById('waiting').style.display='flex';
+  document.getElementById('setupCard').style.display='none';
+  document.getElementById('tbadge').style.display='none';
+  document.getElementById('bigTitle').innerHTML='Session<br>Complete';
+  document.getElementById('bigSub').textContent='Thank you! Your facilitator has all transcripts and themes.';
+}
+
+// ── VIZ + DURATION ────────────────────────────────────────────────────────
+function startViz(){
+  document.getElementById('viz').classList.add('on');
+  const bars=[1,2,3,4,5,6,7].map(i=>document.getElementById('v'+i));
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  vizInt=setInterval(()=>{analyser.getByteFrequencyData(data);
+    bars.forEach((b,i)=>{b.style.height=Math.max(4,(data[i*2]||0)/255*22)+'px';});},80);
+}
+function stopViz(){clearInterval(vizInt);document.getElementById('viz').classList.remove('on');}
+function startDur(){
+  const el=document.getElementById('ringDur');
+  durInt=setInterval(()=>{
+    const s=Math.floor((Date.now()-recStart)/1000);
+    el.textContent=`recording: ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  },1000);
+}
+function stopDur(){clearInterval(durInt);document.getElementById('ringDur').textContent='recording: 0:00';}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const getMime=()=>['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4']
+  .find(t=>MediaRecorder.isTypeSupported(t))||'audio/webm';
+function setPill(type,msg){
+  document.getElementById('pill').className='pill '+(type||'');
+  document.getElementById('pillTxt').textContent=msg;
+}
+function setRStatus(type,msg){
+  const el=document.getElementById('rStatus');
+  el.className='r-status '+(type||'');
+  el.textContent=msg;
+}
+</script>
+</body>
+</html>
