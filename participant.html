@@ -285,7 +285,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--tx);
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const OAI='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';
+const OAI='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';
 
 // Phase definitions (must match facilitator)
 const PHASES=[
@@ -435,17 +435,48 @@ function updateRingTimer(s,total){
 }
 
 // ── RECORDING ─────────────────────────────────────────────────────────────
+// ── SPEECH RECOGNITION (Web Speech API — no external API needed) ──────────
+let speechRec=null;
+let speechFinal='';
+let speechInterim='';
+const hasSpeech=('webkitSpeechRecognition' in window)||('SpeechRecognition' in window);
+
 async function toggleRec(){ isRec?stopRec():await startRec(); }
 
 async function startRec(){
+  speechFinal=''; speechInterim='';
   try{ stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
-  catch(e){ setStatus('err','⚠ Microphone access denied'); return; }
+  catch(e){ setRStatus('err','⚠ Microphone access denied'); return; }
 
   chunks=[]; recStart=Date.now();
   ctx=new AudioContext(); analyser=ctx.createAnalyser(); analyser.fftSize=32;
   ctx.createMediaStreamSource(stream).connect(analyser);
   startViz(); startDur();
 
+  // Start Web Speech API for live transcription
+  if(hasSpeech){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    speechRec=new SR();
+    speechRec.continuous=true;
+    speechRec.interimResults=true;
+    speechRec.lang='en-AU';
+    speechRec.onresult=e=>{
+      speechFinal='';speechInterim='';
+      for(let i=0;i<e.results.length;i++){
+        if(e.results[i].isFinal) speechFinal+=e.results[i][0].transcript+' ';
+        else speechInterim+=e.results[i][0].transcript;
+      }
+      // Show live preview
+      const rc=document.getElementById('result');
+      rc.style.display='block';
+      document.getElementById('rText').textContent=(speechFinal+speechInterim).trim()||'Listening…';
+      setRStatus('sending','● Live transcribing…');
+    };
+    speechRec.onerror=e=>console.log('Speech error:',e.error);
+    try{ speechRec.start(); }catch(e){ console.log('Speech start error:',e); }
+  }
+
+  // Also record audio chunks for Whisper fallback
   const mime=getMime();
   mediaRec=new MediaRecorder(stream,{mimeType:mime});
   mediaRec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
@@ -456,7 +487,7 @@ async function startRec(){
   if(tRef) tRef.update({recording:true});
   document.getElementById('recOuter').classList.add('recording');
   document.getElementById('recBtn').textContent='⏹';
-  document.getElementById('recHint').textContent='Recording… tap to stop & transcribe';
+  document.getElementById('recHint').textContent='Recording… tap to stop';
   document.getElementById('recHint').classList.add('recording');
   document.getElementById('result').style.display='none';
   document.getElementById('subBtn').style.display='none';
@@ -464,6 +495,7 @@ async function startRec(){
 }
 
 function stopRec(){
+  if(speechRec){ try{speechRec.stop();}catch(e){} }
   mediaRec.stop();
   stream.getTracks().forEach(t=>t.stop());
   stopViz(); stopDur();
@@ -473,34 +505,52 @@ function stopRec(){
   document.getElementById('recBtn').textContent='🎙';
   document.getElementById('recHint').textContent='Tap to record';
   document.getElementById('recHint').classList.remove('recording');
-  setRStatus('sending','⟳ Transcribing with Whisper…');
+  setRStatus('sending','⟳ Processing…');
 }
 
 async function process(){
   const dur=(Date.now()-recStart)/1000;
-  const blob=new Blob(chunks,{type:getMime()});
   const rc=document.getElementById('result');
   rc.style.display='block';
-  document.getElementById('rText').textContent='Processing…';
 
-  try{
-    const text=await whisper(blob,getMime());
-    document.getElementById('rText').textContent=text;
+  // Use Web Speech result if we got one, otherwise try Whisper
+  const speechText=(speechFinal+speechInterim).trim();
+  if(speechText && speechText.length>5 && speechText!=='Listening…'){
+    document.getElementById('rText').textContent=speechText;
     setRStatus('done','✓ Transcribed');
     document.getElementById('subBtn').style.display='block';
-    await pushTx(text,dur);
+    await pushTx(speechText,dur);
     setRStatus('done','✓ Sent to facilitator');
-    // Show theme loading state if this is a themes phase
     const p=PHASES[curP];
     if(p?.themes){
       document.getElementById('themesCard').style.display='block';
       document.getElementById('tagsRow').innerHTML='<div class="gen"><span class="spin">⟳</span> Analysing themes…</div>';
       listenThemes();
     }
-  }catch(e){
-    document.getElementById('rText').textContent='Error: '+e.message;
-    setRStatus('err','⚠ Transcription failed — submit manually');
-    document.getElementById('subBtn').style.display='block';
+  } else {
+    // Fallback to Whisper
+    document.getElementById('rText').textContent='Processing audio…';
+    setRStatus('sending','⟳ Transcribing…');
+    const blob=new Blob(chunks,{type:getMime()});
+    try{
+      const text=await whisper(blob,getMime());
+      document.getElementById('rText').textContent=text||'(no speech detected)';
+      setRStatus('done','✓ Transcribed');
+      document.getElementById('subBtn').style.display='block';
+      await pushTx(text,dur);
+      setRStatus('done','✓ Sent to facilitator');
+      const p=PHASES[curP];
+      if(p?.themes){
+        document.getElementById('themesCard').style.display='block';
+        document.getElementById('tagsRow').innerHTML='<div class="gen"><span class="spin">⟳</span> Analysing themes…</div>';
+        listenThemes();
+      }
+    }catch(e){
+      document.getElementById('rText').textContent=speechText||'(tap Submit to enter manually)';
+      setRStatus('err','⚠ Auto-transcription unavailable — edit and submit');
+      document.getElementById('subBtn').style.display='block';
+      if(speechText) await pushTx(speechText,dur);
+    }
   }
 }
 
@@ -510,8 +560,6 @@ async function whisper(blob,mime){
   fd.append('file',blob,'rec.'+ext);
   fd.append('model','whisper-1');
   fd.append('language','en');
-
-  // Use XMLHttpRequest — more reliable than fetch for multipart in Firefox/Safari
   return new Promise((resolve,reject)=>{
     const xhr=new XMLHttpRequest();
     xhr.open('POST','https://api.openai.com/v1/audio/transcriptions');
@@ -520,14 +568,14 @@ async function whisper(blob,mime){
     xhr.onload=()=>{
       if(xhr.status===200){
         try{resolve(JSON.parse(xhr.responseText).text||'');}
-        catch(e){reject(new Error('Invalid response: '+xhr.responseText));}
-      } else {
+        catch(e){reject(new Error('Invalid response'));}
+      }else{
         try{const e=JSON.parse(xhr.responseText);reject(new Error(e.error?.message||'HTTP '+xhr.status));}
         catch(e){reject(new Error('HTTP '+xhr.status));}
       }
     };
-    xhr.onerror=()=>reject(new Error('Network error — check internet connection'));
-    xhr.ontimeout=()=>reject(new Error('Request timed out after 60s'));
+    xhr.onerror=()=>reject(new Error('Network error'));
+    xhr.ontimeout=()=>reject(new Error('Timeout'));
     xhr.send(fd);
   });
 }
