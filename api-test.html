@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IA API Test</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Epilogue:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Epilogue:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0d0b1a;--s1:#13112a;--s2:#1a1635;
@@ -19,349 +19,259 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:var(--sans);background:var(--bg);color:var(--tx);
   min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  justify-content:flex-start;padding:2.5rem 1.5rem;}
-.wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:1.25rem;}
-.ia-logo{height:24px;filter:brightness(0) invert(1);opacity:.7;margin-bottom:.5rem;align-self:flex-start;}
-h1{font-size:1.5rem;font-weight:900;letter-spacing:-.02em;margin-bottom:.15rem;}
-.sub{font-size:.82rem;color:var(--mu2);line-height:1.55;margin-bottom:.25rem;}
-
-.test-card{background:var(--s1);border:1px solid var(--b1);border-radius:.75rem;padding:1.2rem 1.35rem;}
-.tc-head{display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem;}
-.tc-icon{font-size:1.3rem;}
-.tc-title{font-size:1rem;font-weight:700;}
-.tc-badge{font-family:var(--mono);font-size:.6rem;padding:.18rem .5rem;border-radius:2rem;
-  background:var(--s2);border:1px solid var(--b2);color:var(--mu2);margin-left:auto;}
-.tc-badge.pass{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--gr);}
-.tc-badge.fail{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--rd);}
-.tc-badge.running{background:var(--acd);border-color:rgba(139,92,246,.3);color:var(--ac2);}
-
-.log{font-family:var(--mono);font-size:.72rem;line-height:1.8;
-  background:var(--bg);border:1px solid var(--b1);border-radius:.4rem;
-  padding:.75rem;min-height:48px;white-space:pre-wrap;word-break:break-all;}
-.log .ok{color:var(--gr);}
-.log .err{color:var(--rd);}
-.log .info{color:var(--ac2);}
-.log .warn{color:var(--am);}
-.log .mu{color:var(--mu2);}
-
-.run-btn{font-family:var(--sans);font-size:.82rem;font-weight:700;
-  padding:.5rem 1.1rem;border-radius:.35rem;
-  border:none;background:var(--ac);color:#fff;
-  cursor:pointer;transition:background .15s;margin-top:.65rem;}
-.run-btn:hover{background:var(--ac2);}
-.run-btn:disabled{opacity:.35;cursor:not-allowed;}
-.run-all{font-size:.9rem;padding:.65rem 1.5rem;width:100%;
-  border:none;background:var(--ac);color:#fff;
-  border-radius:.45rem;cursor:pointer;font-family:var(--sans);font-weight:700;
-  transition:background .15s;}
+  padding:2.5rem 1.5rem;}
+.wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:1.2rem;}
+.ia-logo{height:22px;filter:brightness(0) invert(1);opacity:.7;margin-bottom:.25rem;}
+h1{font-size:1.45rem;font-weight:900;letter-spacing:-.02em;}
+.sub{font-size:.8rem;color:var(--mu2);line-height:1.55;margin-top:.2rem;}
+.warn-box{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.3);
+  border-radius:.55rem;padding:.8rem 1rem;
+  font-family:var(--mono);font-size:.7rem;line-height:1.65;color:var(--am);display:none;}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:.7rem;padding:1.1rem 1.25rem;}
+.card-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;}
+.card-icon{font-size:1.2rem;}
+.card-title{font-size:.95rem;font-weight:700;}
+.badge{font-family:var(--mono);font-size:.58rem;padding:.16rem .48rem;
+  border-radius:2rem;background:var(--s2);border:1px solid var(--b2);
+  color:var(--mu2);margin-left:auto;white-space:nowrap;}
+.badge.pass{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--gr);}
+.badge.fail{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--rd);}
+.badge.running{background:var(--acd);border-color:rgba(139,92,246,.3);color:var(--ac2);}
+.log{font-family:var(--mono);font-size:.7rem;line-height:1.8;
+  background:var(--bg);border:1px solid var(--b1);border-radius:.38rem;
+  padding:.7rem;min-height:44px;white-space:pre-wrap;word-break:break-all;
+  max-height:160px;overflow-y:auto;}
+.ok{color:var(--gr);}.err{color:var(--rd);}.info{color:var(--ac2);}
+.warn{color:var(--am);}.mu{color:var(--mu2);}
+.run-btn{font-family:var(--sans);font-size:.78rem;font-weight:700;
+  padding:.45rem 1rem;border-radius:.32rem;
+  border:1px solid var(--b2);background:var(--s2);
+  color:var(--tx);cursor:pointer;margin-top:.6rem;transition:all .15s;}
+.run-btn:hover{border-color:rgba(255,255,255,.2);}
+.run-all{width:100%;font-family:var(--sans);font-size:.9rem;font-weight:700;
+  padding:.65rem;border-radius:.42rem;border:none;
+  background:var(--ac);color:#fff;cursor:pointer;transition:background .15s;}
 .run-all:hover{background:var(--ac2);}
-
-.spin{display:inline-block;animation:spin 1s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-
 .summary{background:var(--s1);border:1px solid var(--b2);
-  border-radius:.75rem;padding:1.1rem 1.35rem;
-  font-family:var(--mono);font-size:.8rem;line-height:1.9;display:none;}
-.summary h3{font-family:var(--sans);font-size:.9rem;font-weight:700;
-  margin-bottom:.55rem;}
+  border-radius:.7rem;padding:1rem 1.25rem;display:none;}
+.summary h3{font-size:.88rem;font-weight:700;margin-bottom:.5rem;}
+.sum-line{font-family:var(--mono);font-size:.75rem;line-height:2;}
 </style>
 </head>
 <body>
-<div id="localWarning" style="display:none;width:100%;max-width:600px;margin-bottom:1rem;
-  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);
-  border-radius:.6rem;padding:.85rem 1.1rem;
-  font-family:'DM Mono',monospace;font-size:.72rem;line-height:1.7;color:#f59e0b;">
-  ⚠ <strong>You are opening this file directly from your computer (file://).</strong><br>
-  Browsers block API calls from local files. 
-  <strong>Upload api-test.html to Netlify</strong> and open it from there instead.<br>
-  e.g. <span style="color:#ede9fe;">https://your-site.netlify.app/api-test.html</span>
-</div>
 <div class="wrap">
-
   <img class="ia-logo" src="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png?format=200w" alt="IA"/>
   <div>
     <h1>API Connectivity Test</h1>
-    <div class="sub">Tests all three APIs used by the workshop tool: Firebase Realtime Database, OpenAI GPT-4o (theme extraction), and OpenAI Whisper (transcription). Run this page in a browser before the workshop to confirm everything is working.</div>
+    <div class="sub">Tests Firebase, GPT-4o, and Whisper. Run from Netlify — not a local file.</div>
   </div>
-
-  <button class="run-all" onclick="runAll()">▶ Run All Tests</button>
-
-  <!-- Firebase -->
-  <div class="test-card">
-    <div class="tc-head">
-      <span class="tc-icon">🔥</span>
-      <span class="tc-title">Firebase Realtime Database</span>
-      <span class="tc-badge" id="fb-badge">Not run</span>
+  <div class="warn-box" id="warnBox">
+    You are opening this file directly from your computer (file://).<br>
+    Browsers block API calls from local files. Open from Netlify instead:<br>
+    https://mellifluous-lolly-73d1f7.netlify.app/api-test.html
+  </div>
+  <button class="run-all" onclick="runAll()">Run All Tests</button>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-icon">🔥</span>
+      <span class="card-title">Firebase Realtime Database</span>
+      <span class="badge" id="fb-badge">Not run</span>
     </div>
-    <div class="log" id="fb-log"><span class="mu">Click "Run All Tests" to begin…</span></div>
-    <button class="run-btn" onclick="testFirebase()">Run Test</button>
+    <div class="log" id="fb-log"><span class="mu">Press Run All Tests…</span></div>
+    <button class="run-btn" onclick="testFirebase()">Run</button>
   </div>
-
-  <!-- GPT-4o -->
-  <div class="test-card">
-    <div class="tc-head">
-      <span class="tc-icon">🧠</span>
-      <span class="tc-title">OpenAI GPT-4o — Theme Extraction</span>
-      <span class="tc-badge" id="gpt-badge">Not run</span>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-icon">🧠</span>
+      <span class="card-title">OpenAI GPT-4o — Theme Extraction</span>
+      <span class="badge" id="gpt-badge">Not run</span>
     </div>
-    <div class="log" id="gpt-log"><span class="mu">Click "Run All Tests" to begin…</span></div>
-    <button class="run-btn" onclick="testGPT()">Run Test</button>
+    <div class="log" id="gpt-log"><span class="mu">Press Run All Tests…</span></div>
+    <button class="run-btn" onclick="testGPT()">Run</button>
   </div>
-
-  <!-- Whisper -->
-  <div class="test-card">
-    <div class="tc-head">
-      <span class="tc-icon">🎙</span>
-      <span class="tc-title">OpenAI Whisper — Transcription</span>
-      <span class="tc-badge" id="wh-badge">Not run</span>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-icon">🎙</span>
+      <span class="card-title">OpenAI Whisper — Transcription</span>
+      <span class="badge" id="wh-badge">Not run</span>
     </div>
-    <div class="log" id="wh-log"><span class="mu">Click "Run All Tests" to begin…</span></div>
-    <button class="run-btn" onclick="testWhisper()">Run Test</button>
+    <div class="log" id="wh-log"><span class="mu">Press Run All Tests…</span></div>
+    <button class="run-btn" onclick="testWhisper()">Run</button>
   </div>
-
-  <!-- Summary -->
   <div class="summary" id="summary">
-    <h3>Test Summary</h3>
-    <div id="summaryBody"></div>
+    <h3>Summary</h3>
+    <div id="sumBody"></div>
   </div>
-
 </div>
 
 <script>
-const OAI = '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';
-const FB_CONFIG = {
-  apiKey: 'AIzaSyALhQTTwWLyXk4mVeckvbCuYjS1OS6RcZs',
-  databaseURL: 'https://ia-workshop-app-default-rtdb.firebaseio.com',
-  projectId: 'ia-workshop-app',
-};
+var OAI = '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';
+var FB_CFG = {apiKey:'AIzaSyALhQTTwWLyXk4mVeckvbCuYjS1OS6RcZs',databaseURL:'https://ia-workshop-app-default-rtdb.firebaseio.com',projectId:'ia-workshop-app'};
+var results = {firebase:null,gpt:null,whisper:null};
+var fbApp = null;
 
-let fbApp = null;
-const results = {firebase: null, gpt: null, whisper: null};
+if(location.protocol==='file:') document.getElementById('warnBox').style.display='block';
 
-// ── LOG HELPERS ────────────────────────────────────────────────────────────
-function log(id, msg, type=''){
-  const el = document.getElementById(id);
-  const span = document.createElement('span');
-  span.className = type;
-  span.textContent = msg + '\n';
-  if(el.querySelector('.mu')) el.innerHTML = '';
-  el.appendChild(span);
-  el.scrollTop = el.scrollHeight;
+function addLog(id,msg,cls){
+  var el=document.getElementById(id);
+  var mu=el.querySelector('.mu');
+  if(mu) el.innerHTML='';
+  var s=document.createElement('span');
+  if(cls) s.className=cls;
+  s.textContent=msg+'\n';
+  el.appendChild(s);
+  el.scrollTop=el.scrollHeight;
 }
-function setBadge(id, state){
-  const el = document.getElementById(id+'-badge');
-  el.className = 'tc-badge ' + state;
-  el.textContent = state === 'pass' ? '✓ Pass' : state === 'fail' ? '✗ Fail' : state === 'running' ? '⟳ Running…' : state;
+function setBadge(id,state){
+  var el=document.getElementById(id+'-badge');
+  el.className='badge '+state;
+  el.textContent=state==='pass'?'✓ Pass':state==='fail'?'✗ Fail':state==='running'?'Running…':state;
+}
+function xhrPost(url,headers,body){
+  return new Promise(function(resolve,reject){
+    var r=new XMLHttpRequest();
+    r.open('POST',url);
+    Object.keys(headers).forEach(function(k){r.setRequestHeader(k,headers[k]);});
+    r.timeout=30000;
+    r.onload=function(){resolve({status:r.status,text:r.responseText});};
+    r.onerror=function(){reject(new Error('Network error — check WiFi connection'));};
+    r.ontimeout=function(){reject(new Error('Timeout after 30s'));};
+    r.send(body);
+  });
 }
 
-// ── 1. FIREBASE TEST ──────────────────────────────────────────────────────
-async function testFirebase(){
-  setBadge('fb', 'running');
-  log('fb-log', '→ Initialising Firebase…', 'info');
-  try {
-    // Safely get or create Firebase app
+function testFirebase(){
+  setBadge('fb','running');
+  addLog('fb-log','Initialising Firebase…','info');
+  try{
     if(!fbApp){
-      try {
-        fbApp = firebase.app('ia-test');
-      } catch(e) {
-        fbApp = firebase.initializeApp(FB_CONFIG, 'ia-test');
+      try{fbApp=firebase.app('ia-test');}
+      catch(e){fbApp=firebase.initializeApp(FB_CFG,'ia-test');}
+    }
+  }catch(e){
+    addLog('fb-log','Failed to init: '+e.message,'err');
+    setBadge('fb','fail');results.firebase=false;return;
+  }
+  var db=fbApp.database();
+  addLog('fb-log','Writing test record…','info');
+  db.ref('_api_test').set({ok:true,ts:Date.now()}).then(function(){
+    addLog('fb-log','  Write OK','ok');
+    return db.ref('_api_test').once('value');
+  }).then(function(snap){
+    var val=snap.val();
+    if(val&&val.ok){
+      addLog('fb-log','  Read OK — '+JSON.stringify(val),'ok');
+    }else{
+      throw new Error('Unexpected read: '+JSON.stringify(val));
+    }
+    return db.ref('_api_test').remove();
+  }).then(function(){
+    addLog('fb-log','  Delete OK','ok');
+    addLog('fb-log','\nFIREBASE PASSED','ok');
+    setBadge('fb','pass');results.firebase=true;
+  }).catch(function(e){
+    addLog('fb-log','\nFAILED: '+e.message,'err');
+    setBadge('fb','fail');results.firebase=false;
+  });
+}
+
+function testGPT(){
+  setBadge('gpt','running');
+  addLog('gpt-log','Calling GPT-4o…','info');
+  var body=JSON.stringify({model:'gpt-4o',max_tokens:80,temperature:0.3,
+    messages:[{role:'user',content:'Return ONLY this JSON array: ["Distribution costs","Export access","Talent shortage"]'}]});
+  xhrPost('https://api.openai.com/v1/chat/completions',
+    {'Authorization':'Bearer '+OAI,'Content-Type':'application/json'},body)
+  .then(function(res){
+    if(res.status!==200) throw new Error('HTTP '+res.status+' '+res.text.slice(0,150));
+    var data=JSON.parse(res.text);
+    var content=(data.choices[0].message.content||'').trim();
+    addLog('gpt-log','  Response: '+content,'ok');
+    var themes=JSON.parse(content.replace(/```json|```/g,'').trim());
+    addLog('gpt-log','  Themes: '+themes.join(', '),'ok');
+    addLog('gpt-log','  Model: '+data.model+' | Tokens: '+data.usage.total_tokens,'mu');
+    addLog('gpt-log','\nGPT-4o PASSED','ok');
+    setBadge('gpt','pass');results.gpt=true;
+  }).catch(function(e){
+    addLog('gpt-log','\nFAILED: '+e.message,'err');
+    setBadge('gpt','fail');results.gpt=false;
+  });
+}
+
+function testWhisper(){
+  setBadge('wh','running');
+  addLog('wh-log','Generating 1-second test audio…','info');
+  try{
+    var sr=16000,ns=sr,buf=new ArrayBuffer(44+ns*2),v=new DataView(buf);
+    function ws(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));}
+    ws(0,'RIFF');v.setUint32(4,36+ns*2,true);ws(8,'WAVE');
+    ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);
+    v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);
+    v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,ns*2,true);
+    for(var i=0;i<ns;i++) v.setInt16(44+i*2,Math.round(Math.sin(2*Math.PI*440*i/sr)*0.3*32767),true);
+    var blob=new Blob([buf],{type:'audio/wav'});
+    addLog('wh-log','  WAV: '+blob.size+' bytes','ok');
+    addLog('wh-log','Sending to Whisper…','info');
+    var fd=new FormData();
+    fd.append('file',blob,'test.wav');
+    fd.append('model','whisper-1');
+    fd.append('language','en');
+    var r=new XMLHttpRequest();
+    r.open('POST','https://api.openai.com/v1/audio/transcriptions');
+    r.setRequestHeader('Authorization','Bearer '+OAI);
+    r.timeout=30000;
+    r.onload=function(){
+      if(r.status===200){
+        var data=JSON.parse(r.responseText);
+        addLog('wh-log','  HTTP 200 OK','ok');
+        addLog('wh-log','  Transcript: "'+(data.text||'(empty — expected for tone)')+'"','ok');
+        addLog('wh-log','\nWHISPER PASSED','ok');
+        setBadge('wh','pass');results.whisper=true;
+      }else{
+        addLog('wh-log','\nFAILED: HTTP '+r.status+' '+r.responseText.slice(0,150),'err');
+        setBadge('wh','fail');results.whisper=false;
       }
-    }
-    const db = fbApp.database();
-
-    // Write
-    log('fb-log', '→ Writing test record…', 'info');
-    const testRef = db.ref('_api_test');
-    await testRef.set({ok: true, ts: Date.now()});
-    log('fb-log', '  ✓ Write successful', 'ok');
-
-    // Read
-    log('fb-log', '→ Reading back…', 'info');
-    const snap = await testRef.once('value');
-    const val = snap.val();
-    if(val?.ok === true){
-      log('fb-log', `  ✓ Read successful — value: ${JSON.stringify(val)}`, 'ok');
-    } else {
-      throw new Error('Read returned unexpected value: '+JSON.stringify(val));
-    }
-
-    // Delete
-    await testRef.remove();
-    log('fb-log', '  ✓ Cleanup successful', 'ok');
-    log('fb-log', '\n✓ Firebase: ALL TESTS PASSED', 'ok');
-    setBadge('fb', 'pass');
-    results.firebase = true;
-  } catch(e) {
-    log('fb-log', `\n✗ Firebase FAILED: ${e.message}`, 'err');
-    setBadge('fb', 'fail');
-    results.firebase = false;
+      showSummary();
+    };
+    r.onerror=function(){
+      addLog('wh-log','\nFAILED: Network error — check WiFi','err');
+      setBadge('wh','fail');results.whisper=false;
+      showSummary();
+    };
+    r.ontimeout=function(){
+      addLog('wh-log','\nFAILED: Timeout','err');
+      setBadge('wh','fail');results.whisper=false;
+      showSummary();
+    };
+    r.send(fd);
+  }catch(e){
+    addLog('wh-log','\nFAILED: '+e.message,'err');
+    setBadge('wh','fail');results.whisper=false;
+    showSummary();
   }
 }
 
-// ── 2. GPT-4o TEST ────────────────────────────────────────────────────────
-async function testGPT(){
-  setBadge('gpt', 'running');
-  log('gpt-log', '→ Calling GPT-4o API…', 'info');
-  const prompt = `You are analysing a workshop discussion about food & beverage industry growth.
-Transcript: "We talked about how distribution costs are killing small producers, and there's real opportunity in direct-to-consumer channels. Also a major theme around access to export markets."
-Extract 3 key themes as short 2-4 word labels. Return ONLY a valid JSON array. Example: ["Theme one","Theme two","Theme three"]`;
-
-  try {
-    log('gpt-log', '→ Model: gpt-4o | Max tokens: 120', 'mu');
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {'Authorization': 'Bearer '+OAI, 'Content-Type': 'application/json'},
-      body: JSON.stringify({model:'gpt-4o', max_tokens:120, temperature:0.3,
-        messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const err = await res.json().catch(()=>({}));
-      throw new Error(`HTTP ${res.status} — ${err.error?.message||res.statusText}`);
-    }
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() || '';
-    log('gpt-log', `  ✓ Raw response: ${raw}`, 'ok');
-    const themes = JSON.parse(raw.replace(/```json|```/g,'').trim());
-    log('gpt-log', `  ✓ Parsed themes: ${themes.join(', ')}`, 'ok');
-    log('gpt-log', `  ✓ Model used: ${data.model}`, 'mu');
-    log('gpt-log', `  ✓ Tokens used: ${data.usage?.total_tokens}`, 'mu');
-    log('gpt-log', '\n✓ GPT-4o: ALL TESTS PASSED', 'ok');
-    setBadge('gpt', 'pass');
-    results.gpt = true;
-  } catch(e){
-    log('gpt-log', `\n✗ GPT-4o FAILED: ${e.message}`, 'err');
-    setBadge('gpt', 'fail');
-    results.gpt = false;
-  }
+function showSummary(){
+  var el=document.getElementById('summary');
+  var body=document.getElementById('sumBody');
+  el.style.display='block';
+  function ic(v){return v===true?'✓':v===false?'✗':'—';}
+  function cl(v){return v===true?'ok':v===false?'err':'mu';}
+  var all=results.firebase===true&&results.gpt===true&&results.whisper===true;
+  body.innerHTML=
+    '<div class="sum-line"><span class="'+cl(results.firebase)+'">'+ic(results.firebase)+'  Firebase Realtime Database</span></div>'+
+    '<div class="sum-line"><span class="'+cl(results.gpt)+'">'+ic(results.gpt)+'  OpenAI GPT-4o (theme extraction)</span></div>'+
+    '<div class="sum-line"><span class="'+cl(results.whisper)+'">'+ic(results.whisper)+'  OpenAI Whisper (transcription)</span></div>'+
+    '<div class="sum-line" style="margin-top:.35rem;"><span class="'+(all?'ok':'err')+'">'+(all?'All systems operational — ready for workshop.':'One or more tests failed — see logs above.')+'</span></div>';
 }
 
-// ── 3. WHISPER TEST ────────────────────────────────────────────────────────
-// Generates a minimal valid WAV file in-browser and sends it to Whisper
-async function testWhisper(){
-  setBadge('wh', 'running');
-  log('wh-log', '→ Generating synthetic audio (1-second 440Hz tone)…', 'info');
-
-  try {
-    // Create 1-second 16kHz mono WAV with a 440Hz tone
-    const sampleRate = 16000;
-    const duration = 1;
-    const numSamples = sampleRate * duration;
-    const numChannels = 1;
-    const bitsPerSample = 16;
-    const byteRate = sampleRate * numChannels * bitsPerSample / 8;
-    const blockAlign = numChannels * bitsPerSample / 8;
-    const dataSize = numSamples * blockAlign;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
-
-    // WAV header
-    const writeStr = (off, str) => [...str].forEach((c,i)=>view.setUint8(off+i, c.charCodeAt(0)));
-    writeStr(0,'RIFF'); view.setUint32(4,36+dataSize,true); writeStr(8,'WAVE');
-    writeStr(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
-    view.setUint16(22,numChannels,true); view.setUint32(24,sampleRate,true);
-    view.setUint32(28,byteRate,true); view.setUint16(32,blockAlign,true);
-    view.setUint16(34,bitsPerSample,true); writeStr(36,'data');
-    view.setUint32(40,dataSize,true);
-
-    // PCM samples — 440Hz sine wave
-    for(let i=0; i<numSamples; i++){
-      const sample = Math.sin(2*Math.PI*440*i/sampleRate) * 0.3 * 32767;
-      view.setInt16(44 + i*2, Math.round(sample), true);
-    }
-
-    const blob = new Blob([buffer], {type:'audio/wav'});
-    log('wh-log', `  ✓ WAV generated: ${blob.size} bytes, 16kHz mono, 1 second`, 'ok');
-    log('wh-log', '→ Sending to Whisper API…', 'info');
-
-    const fd = new FormData();
-    fd.append('file', blob, 'test.wav');
-    fd.append('model', 'whisper-1');
-    fd.append('language', 'en');
-
-    log('wh-log', `  → Browser: ${navigator.userAgent.split(' ').slice(-2).join(' ')}`, 'mu');
-    log('wh-log', '  → Sending FormData to Whisper…', 'info');
-
-    let res;
-    try {
-      res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {'Authorization': 'Bearer '+OAI},
-        body: fd
-      });
-    } catch(netErr) {
-      // Diagnose the specific failure
-      log('wh-log', `  ✗ Network error: ${netErr.message}`, 'err');
-      log('wh-log', '  → This is usually a browser CORS/CSP issue, not an API key problem.', 'warn');
-      log('wh-log', '  → Try: Chrome instead of Firefox/Safari, or disable extensions.', 'warn');
-      log('wh-log', '  → Verifying API key is valid via a simpler call…', 'info');
-      // Fallback: test the key is valid using the models endpoint (no multipart)
-      const chk = await fetch('https://api.openai.com/v1/models', {
-        headers: {'Authorization': 'Bearer '+OAI}
-      });
-      if(chk.ok) {
-        const models = await chk.json();
-        const hasWhisper = models.data?.some(m => m.id.includes('whisper'));
-        log('wh-log', `  ✓ API key is VALID — OpenAI responded OK`, 'ok');
-        log('wh-log', `  ✓ Whisper model available: ${hasWhisper}`, 'ok');
-        log('wh-log', `  ✓ Key works — multipart blocked by browser only`, 'ok');
-        log('wh-log', '
-⚠ Whisper: KEY VALID but multipart blocked in this browser.', 'warn');
-        log('wh-log', '  Transcription WILL work from participant.html (different request context).', 'warn');
-        setBadge('wh', 'pass');
-        results.whisper = true;
-        return;
-      } else {
-        throw new Error('API key invalid — ' + chk.status);
-      }
-    }
-
-    if(!res.ok){
-      const err = await res.json().catch(()=>({}));
-      throw new Error(`HTTP ${res.status} — ${err.error?.message||res.statusText}`);
-    }
-
-    const data = await res.json();
-    const text = data.text ?? '';
-    log('wh-log', `  ✓ HTTP 200 received`, 'ok');
-    log('wh-log', `  ✓ Transcription returned: "${text||'(empty — expected for tone-only audio)'}"`, 'ok');
-    log('wh-log', `  ℹ Empty transcript is normal — synthetic tone has no speech content`, 'warn');
-    log('wh-log', '\n✓ Whisper: API CONNECTED AND RESPONDING', 'ok');
-    setBadge('wh', 'pass');
-    results.whisper = true;
-  } catch(e){
-    log('wh-log', `\n✗ Whisper FAILED: ${e.message}`, 'err');
-    setBadge('wh', 'fail');
-    results.whisper = false;
-  }
-}
-
-// ── RUN ALL ────────────────────────────────────────────────────────────────
-async function runAll(){
+function runAll(){
   document.getElementById('summary').style.display='none';
-  await testFirebase();
-  await testGPT();
-  await testWhisper();
-
-  // Summary
-  const s = document.getElementById('summary');
-  const b = document.getElementById('summaryBody');
-  s.style.display='block';
-  const icon = v => v===true?'✓':v===false?'✗':'—';
-  const col  = v => v===true?'ok':v===false?'err':'mu';
-  b.innerHTML = `
-    <span class="${col(results.firebase)}">${icon(results.firebase)}  Firebase Realtime Database</span>\n
-    <span class="${col(results.gpt)}">${icon(results.gpt)}  OpenAI GPT-4o (theme extraction)</span>\n
-    <span class="${col(results.whisper)}">${icon(results.whisper)}  OpenAI Whisper (transcription)</span>\n\n
-    ${Object.values(results).every(v=>v===true)
-      ? '<span class="ok">All systems operational — workshop tool is ready to use.</span>'
-      : '<span class="err">One or more APIs failed. Check the logs above and verify your API keys.</span>'}`;
+  results={firebase:null,gpt:null,whisper:null};
+  testFirebase();
+  setTimeout(function(){testGPT();},500);
+  setTimeout(function(){testWhisper();},1200);
 }
-</script>
-<script>
-  // Detect local file:// — APIs will fail if opened this way
-  if(location.protocol === 'file:'){
-    document.getElementById('localWarning').style.display = 'block';
-  }
 </script>
 </body>
 </html>
