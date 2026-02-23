@@ -656,13 +656,19 @@ async function runSynthesis(){
   output.textContent='Synthesising across all tables and sessions…';
 
   try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+OAI,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o',max_tokens:800,temperature:0.5,
-        messages:[{role:'user',content:buildSynthPrompt()}]})
+    const synthRaw = await new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest();
+      xhr.open('POST','https://api.openai.com/v1/chat/completions');
+      xhr.setRequestHeader('Authorization','Bearer '+OAI);
+      xhr.setRequestHeader('Content-Type','application/json');
+      xhr.timeout=60000;
+      xhr.onload=()=>{xhr.status===200?resolve(xhr.responseText):reject(new Error('HTTP '+xhr.status));};
+      xhr.onerror=()=>reject(new Error('Network error'));
+      xhr.ontimeout=()=>reject(new Error('Timeout'));
+      xhr.send(JSON.stringify({model:'gpt-4o',max_tokens:800,temperature:0.5,
+        messages:[{role:'user',content:buildSynthPrompt()}]}));
     });
-    const data=await res.json();
+    const data=JSON.parse(synthRaw);
     const text=data.choices?.[0]?.message?.content||'No response.';
     output.textContent=text;
     btn.textContent='↺ Regenerate'; btn.disabled=false;
@@ -722,21 +728,32 @@ function listenFB(){
 async function extractThemes(n,pi,transcript){
   const ph=PHASES[pi];
   try{
-    const res=await fetch('https://api.openai.com/v1/chat/completions',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+OAI,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o',max_tokens:200,temperature:0.3,
-        messages:[{role:'user',content:`You are analysing a workshop discussion for Queensland's food & beverage ecosystem.
+    const payload=JSON.stringify({model:'gpt-4o',max_tokens:200,temperature:0.3,
+      messages:[{role:'user',content:`You are analysing a workshop discussion for Queensland's food & beverage ecosystem.
 
 Question: "${ph.text}"
 Table ${n} transcript: "${transcript}"
 
 Extract 3–5 key themes as short 2–4 word labels (e.g. "Export market access", "Talent pipeline", "Regulatory burden").
-Return ONLY a valid JSON array of strings. No explanation. Example: ["Theme one","Theme two"]`}]})
+Return ONLY a valid JSON array of strings. No explanation. Example: ["Theme one","Theme two"]`}]});
+
+    // XHR instead of fetch — works across Chrome, Firefox and Safari
+    const raw = await new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest();
+      xhr.open('POST','https://api.openai.com/v1/chat/completions');
+      xhr.setRequestHeader('Authorization','Bearer '+OAI);
+      xhr.setRequestHeader('Content-Type','application/json');
+      xhr.timeout=30000;
+      xhr.onload=()=>{
+        if(xhr.status===200){resolve(xhr.responseText);}
+        else{reject(new Error('HTTP '+xhr.status));}
+      };
+      xhr.onerror=()=>reject(new Error('Network error'));
+      xhr.ontimeout=()=>reject(new Error('Timeout'));
+      xhr.send(payload);
     });
-    const data=await res.json();
-    const raw=data.choices?.[0]?.message?.content?.trim()||'[]';
-    const themes=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const data=JSON.parse(raw);
+    const themes=JSON.parse((data.choices?.[0]?.message?.content?.trim()||'[]').replace(/```json|```/g,'').trim());
     tdata[n][pi].themes=themes;
     tdata[n][pi].generating=false;
     ref.child(`themes/table${n}/phase${pi}`).set(themes);
