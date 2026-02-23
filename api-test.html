@@ -105,7 +105,7 @@ h1{font-size:1.45rem;font-weight:900;letter-spacing:-.02em;}
 </div>
 
 <script>
-var OAI = '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';
+var OAI = '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';
 var FB_CFG = {apiKey:'AIzaSyALhQTTwWLyXk4mVeckvbCuYjS1OS6RcZs',databaseURL:'https://ia-workshop-app-default-rtdb.firebaseio.com',projectId:'ia-workshop-app'};
 var results = {firebase:null,gpt:null,whisper:null};
 var fbApp = null;
@@ -178,24 +178,37 @@ function testFirebase(){
 function testGPT(){
   setBadge('gpt','running');
   addLog('gpt-log','Calling GPT-4o…','info');
+  addLog('gpt-log','Key prefix: '+OAI.slice(0,20)+'…','mu');
+  addLog('gpt-log','Key length: '+OAI.length+' chars','mu');
   var body=JSON.stringify({model:'gpt-4o',max_tokens:80,temperature:0.3,
     messages:[{role:'user',content:'Return ONLY this JSON array: ["Distribution costs","Export access","Talent shortage"]'}]});
-  xhrPost('https://api.openai.com/v1/chat/completions',
-    {'Authorization':'Bearer '+OAI,'Content-Type':'application/json'},body)
-  .then(function(res){
-    if(res.status!==200) throw new Error('HTTP '+res.status+' '+res.text.slice(0,150));
-    var data=JSON.parse(res.text);
-    var content=(data.choices[0].message.content||'').trim();
-    addLog('gpt-log','  Response: '+content,'ok');
-    var themes=JSON.parse(content.replace(/```json|```/g,'').trim());
-    addLog('gpt-log','  Themes: '+themes.join(', '),'ok');
-    addLog('gpt-log','  Model: '+data.model+' | Tokens: '+data.usage.total_tokens,'mu');
-    addLog('gpt-log','\nGPT-4o PASSED','ok');
-    setBadge('gpt','pass');results.gpt=true;
-  }).catch(function(e){
-    addLog('gpt-log','\nFAILED: '+e.message,'err');
-    setBadge('gpt','fail');results.gpt=false;
-  });
+  var r=new XMLHttpRequest();
+  r.open('POST','https://api.openai.com/v1/chat/completions');
+  r.setRequestHeader('Authorization','Bearer '+OAI);
+  r.setRequestHeader('Content-Type','application/json');
+  r.timeout=20000;
+  r.onload=function(){
+    addLog('gpt-log','HTTP status: '+r.status,'info');
+    addLog('gpt-log','Response: '+r.responseText.slice(0,300),'mu');
+    if(r.status===200){
+      try{
+        var data=JSON.parse(r.responseText);
+        var content=(data.choices[0].message.content||'').trim();
+        addLog('gpt-log','Parsed: '+content,'ok');
+        addLog('gpt-log','\nGPT-4o PASSED','ok');
+        setBadge('gpt','pass');results.gpt=true;
+      }catch(e){
+        addLog('gpt-log','Parse error: '+e.message,'err');
+        setBadge('gpt','fail');results.gpt=false;
+      }
+    }else{
+      addLog('gpt-log','\nFAILED: HTTP '+r.status,'err');
+      setBadge('gpt','fail');results.gpt=false;
+    }
+  };
+  r.onerror=function(){addLog('gpt-log','Network error — request blocked or no internet','err');setBadge('gpt','fail');results.gpt=false;};
+  r.ontimeout=function(){addLog('gpt-log','Timeout after 20s','err');setBadge('gpt','fail');results.gpt=false;};
+  r.send(body);
 }
 
 function testWhisper(){
