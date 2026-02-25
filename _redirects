@@ -10,9 +10,6 @@
 /workshop-new.html          /workshop-new.html          200
 /participant-new.html       /participant-new.html       200
 
-# API functions
-/.netlify/functions/*       /.netlify/functions/:splat  200
-
 # Legacy redirects (in case old URLs are bookmarked)
 /workshop.html              /workshop-new.html          301
 /participant.html           /participant-new.html       301
