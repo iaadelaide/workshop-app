@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Join an interactive IA workshop session">
+  <meta name="theme-color" content="#2563eb">
+  <title>Join Workshop | IA Workshop App</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png?format=100w"/>
+  
+  <!-- Tailwind CSS + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/participant.css">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" defer></script>
+  
+  <!-- Jitsi Meet API (loaded dynamically) -->
+</head>
+<body>
+  <!-- Skip to main content (accessibility) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-base-300 bg-opacity-90 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="text-center">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="loading-text text-base-content mt-4 text-lg">Loading...</p>
+    </div>
+  </div>
+
+  <!-- Error Toast -->
+  <div id="error-message" class="toast toast-top toast-end hidden z-50">
+    <div class="alert alert-error">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span></span>
+    </div>
+  </div>
+  
+  <!-- Success Toast -->
+  <div id="success-message" class="toast toast-top toast-end hidden z-50">
+    <div class="alert alert-success">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main id="main-content">
+    <!-- Join Form Screen -->
+    <div id="join-screen" class="screen active min-h-screen flex items-center justify-center p-4">
+      <div class="card w-full max-w-md bg-base-100 shadow-2xl">
+        <div class="card-body">
+          <h2 class="card-title text-3xl font-bold text-center justify-center mb-2">Join Workshop</h2>
+          <p class="text-center text-base-content/70 mb-6">Enter your details to join the session</p>
+
+          <form id="join-form" novalidate>
+            <div class="form-control mb-4">
+              <label class="label">
+                <span class="label-text font-semibold">Your Name <span class="text-error">*</span></span>
+              </label>
+              <input 
+                type="text" 
+                id="participant-name" 
+                placeholder="Enter your name"
+                class="input input-bordered input-primary w-full"
+                maxlength="50"
+                required
+              >
+              <label class="label">
+                <span class="label-text-alt">This will be visible to other participants</span>
+              </label>
+            </div>
+
+            <div class="form-control mb-6">
+              <label class="label">
+                <span class="label-text font-semibold">Workshop Code <span class="text-error">*</span></span>
+              </label>
+              <input 
+                type="text" 
+                id="room-code" 
+                placeholder="ABC123"
+                class="input input-bordered input-primary w-full text-center font-mono text-xl tracking-widest uppercase"
+                maxlength="6"
+                required
+              >
+              <label class="label">
+                <span class="label-text-alt">6-character code provided by facilitator</span>
+              </label>
+            </div>
+
+            <button 
+              type="submit" 
+              id="join-button" 
+              class="btn btn-primary btn-lg w-full"
+            >
+              <span class="btn-text">Join Workshop</span>
+              <span class="btn-loading hidden">
+                <span class="loading loading-spinner loading-sm"></span>
+                Joining...
+              </span>
+            </button>
+          </form>
+
+          <div class="divider"></div>
+
+          <div class="collapse collapse-arrow bg-base-200">
+            <input type="checkbox" aria-label="Toggle help section" /> 
+            <div class="collapse-title font-medium">
+              Need help?
+            </div>
+            <div class="collapse-content text-sm"> 
+              <ul class="list-disc list-inside space-y-2 text-base-content/80">
+                <li>Make sure you have the correct 6-character workshop code</li>
+                <li>Check that your camera and microphone permissions are enabled</li>
+                <li>Use Chrome, Firefox, or Safari for best experience</li>
+                <li>Close other video call applications before joining</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workshop Screen -->
+    <div id="workshop-screen" class="screen hidden h-screen flex flex-col">
+      <!-- Session Info Bar -->
+      <div class="navbar bg-base-100 shadow-lg">
+        <div class="flex-1">
+          <div class="flex items-center gap-4">
+            <div class="badge badge-primary badge-lg font-mono text-lg px-4" id="display-code">Loading...</div>
+            <span class="font-semibold" id="display-name"></span>
+          </div>
+        </div>
+        <div class="flex-none gap-4">
+          <div class="flex items-center gap-2">
+            <div class="indicator">
+              <span class="indicator-item badge badge-xs" id="status-dot"></span>
+              <span class="text-sm" id="connection-status">Connecting...</span>
+            </div>
+          </div>
+          <div class="badge badge-outline badge-lg" id="phase-indicator">Phase 1</div>
+          
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" class="btn btn-sm btn-circle btn-ghost" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <svg class="h-6 w-6 swap-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <!-- Sun icon -->
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Container -->
+      <div id="jitsi-container" class="flex-1 bg-base-300"></div>
+
+      <!-- Control Panel -->
+      <div class="btm-nav z-10 bg-base-100 border-t border-base-300 h-20">
+        <button id="record-button" class="btn-record" disabled>
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+          <span class="btm-nav-label">Record</span>
+        </button>
+        
+        <button id="themes-button">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <span class="btm-nav-label">Themes</span>
+        </button>
+        
+        <button id="leave-button" class="text-error">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <span class="btm-nav-label">Leave</span>
+        </button>
+      </div>
+
+      <!-- Recording Indicator -->
+      <div id="recording-indicator" class="alert alert-error fixed top-24 right-4 w-auto shadow-lg hidden z-30">
+        <div class="flex items-center gap-2">
+          <span class="loading loading-ring loading-md"></span>
+          <span class="font-semibold">Recording</span>
+          <span id="recording-duration" class="font-mono">0:00</span>
+        </div>
+      </div>
+
+      <!-- Themes Panel (Drawer) -->
+      <div class="drawer drawer-end">
+        <input id="themes-drawer" type="checkbox" class="drawer-toggle" aria-label="Toggle themes panel" />
+        <div class="drawer-side z-20">
+          <label for="themes-drawer" class="drawer-overlay"></label>
+          <div class="menu p-6 w-96 min-h-full bg-base-100">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold">Workshop Themes</h2>
+              <button id="close-themes" class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </div>
+            <div id="themes-list" class="space-y-4">
+              <div class="text-center text-base-content/60 py-8">No themes generated yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/firebase.js"></script>
+  <script src="js/participant.js"></script>
+</body>
+</html>

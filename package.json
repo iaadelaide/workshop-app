@@ -1,0 +1,27 @@
+{
+    "name": "ia-workshop-app",
+    "version": "1.0.0",
+    "description": "Interactive IA Workshop application with real-time transcription and AI-powered theme synthesis",
+    "main": "index.js",
+    "scripts": {
+        "dev": "netlify dev",
+        "build": "node build.js",
+        "deploy": "netlify deploy --prod"
+    },
+    "keywords": [
+        "workshop",
+        "jitsi",
+        "firebase",
+        "openai",
+        "transcription"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "form-data": "^4.0.0",
+        "node-fetch": "^2.6.7"
+    },
+    "devDependencies": {
+        "netlify-cli": "^17.0.0"
+    }
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive IA Workshop platform with real-time collaboration">
+  <meta name="theme-color" content="#2563eb">
+  <title>IA Workshop App</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png?format=100w"/>
+  
+  <!-- Tailwind CSS + DaisyUI -->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/common.css">
+  
+  <style>
+    .hero-gradient {
+      background: linear-gradient(135deg, hsl(var(--p)) 0%, hsl(var(--s)) 100%);
+    }
+    
+    .feature-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-base-200">
+  <!-- Hero Section -->
+  <div class="hero min-h-screen hero-gradient">
+    <div class="hero-content text-center text-primary-content">
+      <div class="max-w-4xl">
+        <div class="mb-8">
+          <img 
+            src="https://images.squarespace-cdn.com/content/v1/6021e9ddb0db996839eb2101/3dd21272-4acc-4995-880d-24b1600c28b8/Copy+of+IA+Logos.png" 
+            alt="IA Logo" 
+            class="w-24 h-24 mx-auto mb-4 rounded-full bg-white p-2"
+          >
+        </div>
+        
+        <h1 class="text-5xl md:text-6xl font-bold mb-6">
+          IA Workshop App
+        </h1>
+        
+        <p class="text-xl md:text-2xl mb-8 opacity-90">
+          Real-time collaborative workshops with live transcription and AI-powered insights
+        </p>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <a href="/workshop-new.html" class="btn btn-lg btn-neutral">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Workshop
+          </a>
+          
+          <a href="/participant-new.html" class="btn btn-lg btn-outline btn-neutral">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Join Workshop
+          </a>
+        </div>
+        
+        <!-- Features -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+          <div class="card bg-base-100 shadow-xl feature-card">
+            <div class="card-body items-center text-center">
+              <svg class="w-12 h-12 text-primary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <h3 class="card-title text-base">Video Conference</h3>
+              <p class="text-sm text-base-content/70">Powered by Jitsi Meet</p>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100 shadow-xl feature-card">
+            <div class="card-body items-center text-center">
+              <svg class="w-12 h-12 text-secondary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <h3 class="card-title text-base">Live Transcription</h3>
+              <p class="text-sm text-base-content/70">Real-time speech-to-text</p>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100 shadow-xl feature-card">
+            <div class="card-body items-center text-center">
+              <svg class="w-12 h-12 text-accent mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              <h3 class="card-title text-base">AI Themes</h3>
+              <p class="text-sm text-base-content/70">GPT-4 powered insights</p>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100 shadow-xl feature-card">
+            <div class="card-body items-center text-center">
+              <svg class="w-12 h-12 text-info mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <h3 class="card-title text-base">Secure</h3>
+              <p class="text-sm text-base-content/70">API keys protected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer class="footer footer-center p-10 bg-base-100 text-base-content">
+    <aside>
+      <p class="font-semibold">IA Workshop App</p>
+      <p>Real-time collaborative workshops with AI-powered insights</p>
+      <p class="text-sm opacity-60">Built with Jitsi, Firebase, and OpenAI</p>
+    </aside>
+    <nav>
+      <div class="grid grid-flow-col gap-4">
+        <button id="theme-toggle" class="btn btn-circle btn-ghost" title="Toggle theme" aria-label="Toggle dark mode">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </footer>
+  
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script>
+    // Initialize theme
+    if (typeof Utils !== 'undefined' && Utils.initTheme) {
+      Utils.initTheme();
+    }
+    
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        if (typeof Utils !== 'undefined' && Utils.toggleTheme) {
+          Utils.toggleTheme();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
